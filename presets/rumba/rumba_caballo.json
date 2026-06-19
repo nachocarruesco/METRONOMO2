@@ -1,0 +1,13 @@
+{
+    "name": "Rumba Caballo",
+    "family": "rumba",
+     "compas": "4_4",
+    "marks": {
+        "0":"grave",
+        "2":"agudo",
+        "3":"agudo",
+        "4":"grave",
+        "6":"agudo",
+        "7":"agudo"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "name": "Cierre Alegrías",
+    "family": "cierres",
+   "compas": "12/8",
+    "marks": {
+        "0":"grave",
+        "3":"agudo",
+        "6":"agudo",
+        "13":"agudo",
+        "14":"agudo",
+        "15":"agudo",
+        "16":"grave",
+        "18":"agudo",
+        "19":"agudo",
+        "20":"grave"
+    }
+}

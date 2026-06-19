@@ -1,0 +1,10 @@
+{
+    "name": "Rumba Abierta",
+    "family": "rumba",
+     "compas": "4_4",
+     "marks": {
+        "0": "grave",
+        "3": "grave",
+        "6": "agudo"
+    }
+}

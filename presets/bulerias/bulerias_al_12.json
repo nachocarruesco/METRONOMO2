@@ -1,0 +1,15 @@
+{
+    "name": "Bulerías al 12",
+    "family": "bulerias",
+    "compas": "12_8",
+     "marks": {
+        "0":"grave",
+        "3":"agudo",
+        "6":"grave",
+        "9":"agudo",
+        "14":"grave",
+        "16":"grave",
+        "18":"agudo",
+        "20":"grave"
+    }
+}

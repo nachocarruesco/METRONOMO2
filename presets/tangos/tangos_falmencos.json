@@ -1,0 +1,12 @@
+{
+    "name": "Tangos Flamencos",
+    "family": "tangos",
+    "compas": "4_4",
+    "marks": {
+        "1":"agudo",
+        "2":"agudo",
+        "3":"grave",
+        "4":"grave",
+        "6":"grave"
+    }
+}

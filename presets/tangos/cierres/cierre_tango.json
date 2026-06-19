@@ -1,0 +1,11 @@
+{
+    "name": "Cierre Tangos",
+    "family": "cierres",
+    "compas": "4_4",
+    "marks": {
+        "1":"agudo",
+        "2":"agudo",
+        "3":"agudo",
+        "4":"agudo"
+    }
+}

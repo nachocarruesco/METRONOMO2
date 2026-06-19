@@ -1,0 +1,17 @@
+{
+    "name": "Bulerías Jerez",
+    "family": "bulerias",
+    "compas": "12_8",
+    "marks": {
+        "0":"grave",
+        "2":"agudo",
+        "3":"agudo",
+        "4":"agudo",
+        "6":"agudo",
+        "12":"grave",
+        "14":"agudo",
+        "15":"agudo",
+        "16":"agudo",
+        "18":"agudo"
+    }
+}
