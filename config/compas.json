@@ -21,7 +21,7 @@
       { "texto": "1", "step": 0 },
       { "texto": "2", "step": 2 },
       { "texto": "3", "step": 4 },
-      { "texto": "4", "step": 6 }
+      { "texto": "4", "step": 6 },
       { "texto": "1", "step": 8 },
       { "texto": "2", "step": 10 },
       { "texto": "3", "step": 12 },
@@ -52,7 +52,7 @@
       { "texto": "1", "step": 0 },
       { "texto": "2", "step": 3 },
       { "texto": "3", "step": 6 },
-      { "texto": "4", "step": 9 }
+      { "texto": "4", "step": 9 },
       { "texto": "1", "step": 12},
       { "texto": "2", "step": 15 },
       { "texto": "3", "step": 18 },
