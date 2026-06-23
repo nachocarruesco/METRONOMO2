@@ -1,10 +1,12 @@
 {
     "name": "config rumba",
 
-    "sequence": {
+    "sequence": [ 
+            {
             "preset": "rumba_abierta",
             "laps": 4
-        },
+            }
+    ],
        
 
     "audio": {
