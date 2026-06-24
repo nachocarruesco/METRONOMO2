@@ -1,43 +1,79 @@
 /*
---------------------------------------------------
+==================================================
 APP PRINCIPAL
+==================================================
 
-Responsabilidades:
+Este archivo coordina toda la carga inicial.
+
+Su trabajo NO es reproducir audio.
+
+Su trabajo NO es dibujar.
+
+Su trabajo NO es generar secuencias.
+
+Su único trabajo es:
 
 1. Leer parámetros URL.
-2. Cargar configuración.
-3. Cargar preset.
-4. Cargar compás.
-5. Construir runtimeConfig.
-6. Mostrar información en logger.
---------------------------------------------------
+2. Cargar archivos JSON.
+3. Resolver toda la configuración.
+4. Construir runtimeConfig.
+5. Mostrar información en el logger.
+
+Cuando termina este archivo existe un único
+objeto llamado runtimeConfig.
+
+A partir de ese momento el resto de módulos
+trabajarán solamente con runtimeConfig.
+
+De esta manera:
+
+Audio
+Canvas
+Secuenciador
+
+NO necesitan saber dónde están los JSON.
+
+==================================================
 */
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener(
+    "DOMContentLoaded",
+    init
+);
 
 /*
---------------------------------------------------
-Objeto global temporal
+==================================================
+CONFIGURACIÓN GLOBAL EN MEMORIA
+==================================================
 
-Aquí guardaremos toda la información ya resuelta.
+Aquí se almacenará toda la información ya
+resuelta.
 
-Más adelante será el objeto que utilizarán:
+Más adelante lo utilizarán:
 
 - secuenciador
 - audio
-- canvas
---------------------------------------------------
+- dibujo
+
+==================================================
 */
 
 let runtimeConfig = {};
 
 /*
---------------------------------------------------
-Punto de entrada principal
---------------------------------------------------
+==================================================
+FUNCIÓN PRINCIPAL
+==================================================
+
+Se ejecuta automáticamente cuando la página
+termina de cargarse.
+
+==================================================
 */
 
 async function init() {
+
+    logSection("INICIO");
 
     logInfo("Aplicación iniciada");
 
@@ -45,102 +81,269 @@ async function init() {
 
         /*
         ------------------------------------------
-        Leer parámetros URL
+        LEER PARÁMETROS DE URL
+        ------------------------------------------
+
+        Ejemplo:
+
+        player.html?family=rumba&preset=rumba_abierta
+
+        family = rumba
+        preset = rumba_abierta
+
         ------------------------------------------
         */
 
-        const params = new URLSearchParams(window.location.search);
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
 
-        const configName = params.get("config");
-        const presetName = params.get("preset");
+        const family =
+            params.get("family");
 
-        if (!configName) {
-            logError("No se recibió parámetro config");
-            return;
-        }
+        const presetName =
+            params.get("preset");
 
-        if (!presetName) {
-            logError("No se recibió parámetro preset");
-            return;
-        }
-
-        logOk(`Config solicitada: ${configName}`);
-        logOk(`Preset solicitado: ${presetName}`);
-
-        /*
-        ------------------------------------------
-        Cargar configuración principal
-        ------------------------------------------
-        */
-
-        const configPath = `./config/${configName}.json`;
-
-        logInfo(`Cargando ${configPath}`);
-
-        const config = await loadJson(configPath);
-
-        logOk("Configuración cargada");
-
-        /*
-        ------------------------------------------
-        Obtener preset desde sequence
-
-        De momento usamos el primero.
-
-        Más adelante el secuenciador recorrerá
-        todos los elementos.
-        ------------------------------------------
-        */
-
-        const sequenceItem = config.sequence[0];
-
-        const presetPath =
-            `./presets/rumba/${sequenceItem.preset}.json`;
-
-        logInfo(`Cargando ${presetPath}`);
-
-        const preset = await loadJson(presetPath);
-
-        logOk("Preset cargado");
-
-        /*
-        ------------------------------------------
-        Obtener compás asociado al preset
-        ------------------------------------------
-        */
-
-        const compasId = preset.compas;
-
-        logInfo(`Compás solicitado: ${compasId}`);
-
-        const compases =
-            await loadJson("./config/compas.json");
-
-        const compas = compases[compasId];
-
-        if (!compas) {
+        if (!family) {
 
             logError(
-                `No existe el compás ${compasId}`
+                "No se recibió parámetro family"
             );
 
             return;
         }
 
-        logOk("Compás cargado");
+        if (!presetName) {
+
+            logError(
+                "No se recibió parámetro preset"
+            );
+
+            return;
+        }
+
+        logOk(`Familia recibida: ${family}`);
+        logOk(`Preset recibido: ${presetName}`);
 
         /*
         ------------------------------------------
-        Construcción del runtime
+        CARGAR CONFIGURACIÓN DE FAMILIA
+        ------------------------------------------
 
-        A partir de este punto el resto de
-        módulos NO deberán leer JSON.
+        Ejemplo:
 
-        Todos trabajarán contra runtimeConfig.
+        ./config/familias/rumba.json
+
+        Este archivo indica:
+
+        - dónde están los presets
+        - qué configuración por defecto usar
+
+        ------------------------------------------
+        */
+
+        logSection("FAMILIA");
+
+        const familyPath =
+            `./config/familias/${family}.json`;
+
+        logInfo(
+            `Cargando ${familyPath}`
+        );
+
+        const familyConfig =
+            await loadJson(familyPath);
+
+        logOk("Familia cargada");
+
+        /*
+        ------------------------------------------
+        OBTENER CONFIGURACIÓN POR DEFECTO
+        ------------------------------------------
+        */
+
+        const defaultConfigName =
+            familyConfig.defaultConfig;
+
+        logInfo(
+            "Configuración por defecto encontrada"
+        );
+
+        logOk(defaultConfigName);
+
+        /*
+        ------------------------------------------
+        CARGAR CONFIGURACIÓN DEFAULT
+        ------------------------------------------
+        */
+
+        const defaultConfigPath =
+            `./config/defaults/${defaultConfigName}.json`;
+
+        logInfo(
+            `Cargando ${defaultConfigPath}`
+        );
+
+        const config =
+            await loadJson(
+                defaultConfigPath
+            );
+
+        logOk(
+            "Configuración cargada"
+        );
+
+        /*
+        ------------------------------------------
+        CONSTRUIR RUTA DEL PRESET
+        ------------------------------------------
+
+        NO está escrita a mano.
+
+        Se genera automáticamente usando
+        la familia recibida.
+
+        ------------------------------------------
+        */
+
+        logSection("PRESET");
+
+        const presetPath =
+            `./presets/${family}/${presetName}.json`;
+
+        logInfo(
+            "Ruta de preset generada"
+        );
+
+        logOk(presetPath);
+
+        /*
+        ------------------------------------------
+        CARGAR PRESET
+        ------------------------------------------
+        */
+
+        logInfo(
+            `Cargando preset`
+        );
+
+        const preset =
+            await loadJson(
+                presetPath
+            );
+
+        logOk(
+            "Preset cargado"
+        );
+
+        /*
+        ------------------------------------------
+        MOSTRAR DATOS DEL PRESET
+        ------------------------------------------
+        */
+
+        logInfo("Nombre");
+        logOk(preset.name);
+
+        logInfo("Familia");
+        logOk(preset.family);
+
+        logInfo("Compás");
+        logOk(preset.compas);
+
+        logInfo("Marcas");
+
+        Object.entries(
+            preset.marks
+        ).forEach(
+
+            ([step, sound]) => {
+
+                logInfo(
+                    `${step} -> ${sound}`
+                );
+
+            }
+
+        );
+
+        /*
+        ------------------------------------------
+        CARGAR ARCHIVO DE COMPASES
+        ------------------------------------------
+        */
+
+        logSection("COMPÁS");
+
+        logInfo(
+            "Cargando compas.json"
+        );
+
+        const compases =
+            await loadJson(
+                "./config/compas.json"
+            );
+
+        const compas =
+            compases[preset.compas];
+
+        if (!compas) {
+
+            logError(
+                `No existe el compás ${preset.compas}`
+            );
+
+            return;
+        }
+
+        logOk(
+            `Compás encontrado: ${preset.compas}`
+        );
+
+        /*
+        ------------------------------------------
+        MOSTRAR DATOS DEL COMPÁS
+        ------------------------------------------
+        */
+
+        logInfo("Pulsos");
+        logOk(compas.pulsos);
+
+        logInfo("Subdivisiones");
+        logOk(compas.subdivisiones);
+
+        logInfo(
+            "Subdivisiones por pulso"
+        );
+
+        logOk(
+            compas.subdivision_por_pulso
+        );
+
+        /*
+        ------------------------------------------
+        CONSTRUIR RUNTIME GLOBAL
+        ------------------------------------------
+
+        A partir de aquí:
+
+        secuenciador.js
+        audio.js
+        canvas.js
+
+        usarán runtimeConfig.
+
+        Ya no tendrán que leer JSON.
+
         ------------------------------------------
         */
 
         runtimeConfig = {
+
+            family: family,
+
+            familyConfig: familyConfig,
 
             config: config,
 
@@ -152,61 +355,52 @@ async function init() {
 
         /*
         ------------------------------------------
-        Mostrar resumen
+        RESUMEN FINAL
         ------------------------------------------
         */
 
-        logInfo("----- RESUMEN -----");
+        logSection("RUNTIME");
 
-        logInfo(
-            `Nombre preset: ${preset.name}`
+        logInfo("Configuración");
+        logOk(config.name);
+
+        logInfo("Preset");
+        logOk(preset.name);
+
+        logInfo("Compás");
+        logOk(compas.nombre);
+
+        logInfo("Instrumento");
+        logOk(
+            config.audio.instrumento
         );
 
-        logInfo(
-            `Familia: ${preset.family}`
+        logInfo("Claqueta");
+
+        logOk(
+            config.claqueta.enabled
+                ? "Activada"
+                : "Desactivada"
         );
 
-        logInfo(
-            `Compás: ${preset.compas}`
-        );
+        logInfo("Cierres");
 
-        logInfo(
-            `Pulsos: ${compas.pulsos}`
-        );
-
-        logInfo(
-            `Subdivisiones: ${compas.subdivisiones}`
-        );
-
-        logInfo(
-            `Subdivisiones por pulso: ${compas.subdivision_por_pulso}`
-        );
-
-        logInfo("Marcas encontradas:");
-
-        Object.entries(preset.marks).forEach(
-            ([step, sound]) => {
-
-                logInfo(
-                    `${step} -> ${sound}`
-                );
-
-            }
+        logOk(
+            config.cierres.enabled
+                ? "Activados"
+                : "Desactivados"
         );
 
         logOk("Runtime creado");
 
-        /*
-        ------------------------------------------
-        Debug completo
+        console.log(
+            "runtimeConfig",
+            runtimeConfig
+        );
 
-        Muy útil mientras desarrollas.
-        ------------------------------------------
-        */
-
-        console.log(runtimeConfig);
-
-        logOk("Fase 2 completada");
+        logOk(
+            "Fase de carga completada"
+        );
 
     }
     catch (error) {
@@ -214,27 +408,28 @@ async function init() {
         console.error(error);
 
         logError(
-            `Excepción: ${error.message}`
+            error.message
         );
 
     }
 }
 
 /*
---------------------------------------------------
-Carga un JSON desde disco
+==================================================
+CARGADOR GENÉRICO DE JSON
+==================================================
 
-Recibe:
-    ruta
+Recibe una ruta.
 
-Devuelve:
-    objeto javascript
---------------------------------------------------
+Devuelve un objeto JavaScript.
+
+==================================================
 */
 
 async function loadJson(path) {
 
-    const response = await fetch(path);
+    const response =
+        await fetch(path);
 
     if (!response.ok) {
 
