@@ -356,6 +356,8 @@ async function init() {
             "Runtime creado"
         );
 
+        drawCompas();
+
         console.log(
             runtimeConfig
         );
