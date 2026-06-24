@@ -12,7 +12,7 @@
         "cierres": "./presets/tangos/cierres/",
         "default": "./config/defaults/default_tangos.json"
     },
-  {
+  
     "alegrias": {
         "nombre": "Alegrias",
         "presets": "./presets/alegrias/",
