@@ -327,6 +327,30 @@ async function init() {
             compas
 
         };
+        logSection("SECUENCIA");
+
+        const sequenceResolved =
+            buildSequence(
+                preset,
+                compas
+            );
+
+        runtimeConfig.sequenceResolved =
+        sequenceResolved;
+
+        sequenceResolved.forEach(
+
+            (sound, index) => {
+
+                logInfo(
+                    `${index} -> ${
+                        sound || "silencio"
+                    }`
+                );
+
+            }
+
+        );
 
         logOk(
             "Runtime creado"
