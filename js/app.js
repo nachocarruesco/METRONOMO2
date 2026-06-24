@@ -70,7 +70,6 @@ termina de cargarse.
 
 ==================================================
 */
-
 async function init() {
 
     logSection("INICIO");
@@ -80,18 +79,9 @@ async function init() {
     try {
 
         /*
-        ------------------------------------------
-        LEER PARÁMETROS DE URL
-        ------------------------------------------
-
-        Ejemplo:
-
-        player.html?family=rumba&preset=rumba_abierta
-
-        family = rumba
-        preset = rumba_abierta
-
-        ------------------------------------------
+        ==========================================
+        LEER URL
+        ==========================================
         */
 
         const params =
@@ -123,71 +113,86 @@ async function init() {
             return;
         }
 
-        logOk(`Familia recibida: ${family}`);
-        logOk(`Preset recibido: ${presetName}`);
+        logOk(
+            `Familia recibida: ${family}`
+        );
+
+        logOk(
+            `Preset recibido: ${presetName}`
+        );
 
         /*
-        ------------------------------------------
-        CARGAR CONFIGURACIÓN DE FAMILIA
-        ------------------------------------------
-
-        Ejemplo:
-
-        ./config/familias/rumba.json
-
-        Este archivo indica:
-
-        - dónde están los presets
-        - qué configuración por defecto usar
-
-        ------------------------------------------
+        ==========================================
+        CARGAR FAMILIAS.JSON
+        ==========================================
         */
 
         logSection("FAMILIA");
 
-        const familyPath =
-            `./config/familias/${family}.json`;
+        const familiasPath =
+            "./config/familias.json";
 
         logInfo(
-            `Cargando ${familyPath}`
+            `Cargando ${familiasPath}`
         );
+
+        const familias =
+            await loadJson(
+                familiasPath
+            );
+
+        logOk(
+            "Archivo familias cargado"
+        );
+
+        /*
+        ==========================================
+        BUSCAR FAMILIA
+        ==========================================
+        */
 
         const familyConfig =
-            await loadJson(familyPath);
+            familias[family];
 
-        logOk("Familia cargada");
+        if (!familyConfig) {
 
-        /*
-        ------------------------------------------
-        OBTENER CONFIGURACIÓN POR DEFECTO
-        ------------------------------------------
-        */
+            logError(
+                `No existe la familia ${family}`
+            );
 
-        const defaultConfigName =
-            familyConfig.defaultConfig;
+            return;
+        }
 
-        logInfo(
-            "Configuración por defecto encontrada"
+        logOk(
+            `Familia encontrada: ${familyConfig.nombre}`
         );
 
-        logOk(defaultConfigName);
-
-        /*
-        ------------------------------------------
-        CARGAR CONFIGURACIÓN DEFAULT
-        ------------------------------------------
-        */
-
-        const defaultConfigPath =
-            `./config/defaults/${defaultConfigName}.json`;
+        logInfo(
+            `Ruta presets: ${familyConfig.presets}`
+        );
 
         logInfo(
-            `Cargando ${defaultConfigPath}`
+            `Ruta cierres: ${familyConfig.cierres}`
+        );
+
+        /*
+        ==========================================
+        CARGAR CONFIG DEFAULT
+        ==========================================
+        */
+
+        logSection("CONFIG");
+
+        const configPath =
+            familyConfig.default;
+
+        logInfo(
+            `Cargando ${configPath}`
         );
 
         const config =
             await loadJson(
-                defaultConfigPath
+                configPath
             );
 
         logOk(
@@ -195,37 +200,18 @@ async function init() {
         );
 
         /*
-        ------------------------------------------
-        CONSTRUIR RUTA DEL PRESET
-        ------------------------------------------
-
-        NO está escrita a mano.
-
-        Se genera automáticamente usando
-        la familia recibida.
-
-        ------------------------------------------
+        ==========================================
+        CARGAR PRESET
+        ==========================================
         */
 
         logSection("PRESET");
 
         const presetPath =
-            `./presets/${family}/${presetName}.json`;
+            `${familyConfig.presets}${presetName}.json`;
 
         logInfo(
-            "Ruta de preset generada"
-        );
-
-        logOk(presetPath);
-
-        /*
-        ------------------------------------------
-        CARGAR PRESET
-        ------------------------------------------
-        */
-
-        logInfo(
-            `Cargando preset`
+            `Ruta preset: ${presetPath}`
         );
 
         const preset =
@@ -238,21 +224,26 @@ async function init() {
         );
 
         /*
-        ------------------------------------------
-        MOSTRAR DATOS DEL PRESET
-        ------------------------------------------
+        ==========================================
+        MOSTRAR PRESET
+        ==========================================
         */
 
-        logInfo("Nombre");
-        logOk(preset.name);
+        logInfo(
+            `Nombre: ${preset.name}`
+        );
 
-        logInfo("Familia");
-        logOk(preset.family);
+        logInfo(
+            `Familia: ${preset.family}`
+        );
 
-        logInfo("Compás");
-        logOk(preset.compas);
+        logInfo(
+            `Compás: ${preset.compas}`
+        );
 
-        logInfo("Marcas");
+        logInfo(
+            "Marcas:"
+        );
 
         Object.entries(
             preset.marks
@@ -269,15 +260,15 @@ async function init() {
         );
 
         /*
-        ------------------------------------------
-        CARGAR ARCHIVO DE COMPASES
-        ------------------------------------------
+        ==========================================
+        CARGAR COMPÁS
+        ==========================================
         */
 
         logSection("COMPÁS");
 
         logInfo(
-            "Cargando compas.json"
+            "Cargando ./config/compas.json"
         );
 
         const compases =
@@ -286,7 +277,9 @@ async function init() {
             );
 
         const compas =
-            compases[preset.compas];
+            compases[
+                preset.compas
+            ];
 
         if (!compas) {
 
@@ -298,104 +291,79 @@ async function init() {
         }
 
         logOk(
-            `Compás encontrado: ${preset.compas}`
+            `Compás encontrado: ${compas.nombre}`
         );
-
-        /*
-        ------------------------------------------
-        MOSTRAR DATOS DEL COMPÁS
-        ------------------------------------------
-        */
-
-        logInfo("Pulsos");
-        logOk(compas.pulsos);
-
-        logInfo("Subdivisiones");
-        logOk(compas.subdivisiones);
 
         logInfo(
-            "Subdivisiones por pulso"
+            `Pulsos: ${compas.pulsos}`
         );
 
-        logOk(
-            compas.subdivision_por_pulso
+        logInfo(
+            `Subdivisiones: ${compas.subdivisiones}`
+        );
+
+        logInfo(
+            `Subdivisiones/pulso: ${compas.subdivision_por_pulso}`
         );
 
         /*
-        ------------------------------------------
-        CONSTRUIR RUNTIME GLOBAL
-        ------------------------------------------
-
-        A partir de aquí:
-
-        secuenciador.js
-        audio.js
-        canvas.js
-
-        usarán runtimeConfig.
-
-        Ya no tendrán que leer JSON.
-
-        ------------------------------------------
-        */
-
-        runtimeConfig = {
-
-            family: family,
-
-            familyConfig: familyConfig,
-
-            config: config,
-
-            preset: preset,
-
-            compas: compas
-
-        };
-
-        /*
-        ------------------------------------------
-        RESUMEN FINAL
-        ------------------------------------------
+        ==========================================
+        CREAR RUNTIME
+        ==========================================
         */
 
         logSection("RUNTIME");
 
-        logInfo("Configuración");
-        logOk(config.name);
+        runtimeConfig = {
 
-        logInfo("Preset");
-        logOk(preset.name);
+            family,
 
-        logInfo("Compás");
-        logOk(compas.nombre);
+            familyConfig,
 
-        logInfo("Instrumento");
-        logOk(
-            config.audio.instrumento
-        );
+            config,
 
-        logInfo("Claqueta");
+            preset,
+
+            compas
+
+        };
 
         logOk(
-            config.claqueta.enabled
-                ? "Activada"
-                : "Desactivada"
+            "Runtime creado"
         );
-
-        logInfo("Cierres");
-
-        logOk(
-            config.cierres.enabled
-                ? "Activados"
-                : "Desactivados"
-        );
-
-        logOk("Runtime creado");
 
         console.log(
-            "runtimeConfig",
             runtimeConfig
+        );
+
+        /*
+        ==========================================
+        RESUMEN
+        ==========================================
+        */
+
+        logInfo(
+            `Instrumento: ${config.audio.instrumento}`
+        );
+
+        logInfo(
+            `BPM default: ${config.bpm.default}`
+        );
+
+        logInfo(
+            `Claqueta: ${
+                config.claqueta.enabled
+                    ? "ON"
+                    : "OFF"
+            }`
+        );
+
+        logInfo(
+            `Cierres: ${
+                config.cierres.enabled
+                    ? "ON"
+                    : "OFF"
+            }`
         );
 
         logOk(
@@ -412,6 +380,7 @@ async function init() {
         );
 
     }
+
 }
 
 /*
