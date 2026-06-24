@@ -1,0 +1,28 @@
+{
+    "rumba": {
+        "nombre": "Rumbas",
+        "presets": "./presets/rumba/",
+        "cierres": "./presets/rumba/cierres/",
+        "default": "./config/defaults/default_rumba.json"
+    },
+
+    "tangos": {
+        "nombre": "Tangos",
+        "presets": "./presets/tangos/",
+        "cierres": "./presets/tangos/cierres/",
+        "default": "./config/defaults/default_tangos.json"
+    },
+  {
+    "alegrias": {
+        "nombre": "Alegrias",
+        "presets": "./presets/alegrias/",
+        "cierres": "./presets/alegrias/cierres/",
+        "default": "./config/defaults/default_alegrias.json"
+    },
+  "bulerias": {
+        "nombre": "Bulerias",
+        "presets": "./presets/bulerias/",
+        "cierres": "./presets/bulerias/cierres/",
+        "default": "./config/defaults/bulerias_tangos.json"
+    }
+}
