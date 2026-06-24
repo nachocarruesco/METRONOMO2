@@ -1,0 +1,32 @@
+{
+    "name": "config rumba",
+
+    "sequence": [ 
+            {
+            "preset": "rumba_abierta",
+            "laps": 4
+            }
+    ],
+       
+
+    "audio": {
+        "instrumento": "cajon",
+        "volumen": "normal"
+    },
+
+    "claqueta": {
+        "enabled": true,
+        "preset": "claqueta_4_4"
+    },
+    
+    "cierres": {
+        "enabled": false,
+        "preset": null
+  },
+
+  "bpm": {
+        "default": 150,
+        "min": 60,
+        "max": 250
+  }
+}
