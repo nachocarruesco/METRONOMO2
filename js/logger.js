@@ -67,3 +67,30 @@ function logOk(message) {
 function logError(message) {
     writeLog(message, "ERROR");
 }
+/*
+--------------------------------------------------
+Muestra una sección visual.
+
+Sirve para separar bloques del log.
+
+Ejemplo:
+
+===== PRESET =====
+
+===== COMPÁS =====
+
+--------------------------------------------------
+*/
+
+function logSection(title) {
+
+    writeLog(
+        `===== ${title} =====`,
+        "INFO"
+    );
+
+}
+window.logInfo = logInfo;
+window.logOk = logOk;
+window.logError = logError;
+window.logSection = logSection;
