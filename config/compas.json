@@ -4,6 +4,12 @@
     "pulsos": 4,
     "subdivisiones": 8,
     "subdivision_por_pulso": 2,
+
+    "metric": {
+      "strong": [0],
+      "weak": [2, 4, 6]
+    },
+
     "etiquetas_default": [
       { "texto": "1", "step": 0 },
       { "texto": "2", "step": 2 },
@@ -17,6 +23,12 @@
     "pulsos": 8,
     "subdivisiones": 16,
     "subdivision_por_pulso": 2,
+
+    "metric": {
+      "strong": [0, 8],
+      "weak": [2, 4, 6, 10, 12, 14]
+    },
+
     "etiquetas_default": [
       { "texto": "1", "step": 0 },
       { "texto": "2", "step": 2 },
@@ -27,7 +39,6 @@
       { "texto": "3", "step": 12 },
       { "texto": "4", "step": 14 }
     ]
-    
   },
 
   "4_4_3": {
@@ -35,6 +46,12 @@
     "pulsos": 4,
     "subdivisiones": 12,
     "subdivision_por_pulso": 3,
+
+    "metric": {
+      "strong": [0],
+      "weak": [3, 6, 9]
+    },
+
     "etiquetas_default": [
       { "texto": "1", "step": 0 },
       { "texto": "2", "step": 3 },
@@ -43,28 +60,17 @@
     ]
   },
 
-  "4_4_3x2": {
-    "nombre": "4/4 Tresillos x2",
-    "pulsos": 8,
-    "subdivisiones": 24,
-    "subdivision_por_pulso": 3,
-    "etiquetas_default": [
-      { "texto": "1", "step": 0 },
-      { "texto": "2", "step": 3 },
-      { "texto": "3", "step": 6 },
-      { "texto": "4", "step": 9 },
-      { "texto": "1", "step": 12},
-      { "texto": "2", "step": 15 },
-      { "texto": "3", "step": 18 },
-      { "texto": "4", "step": 21 }
-    ]
-  },
-
   "6_8": {
     "nombre": "6/8",
     "pulsos": 6,
     "subdivisiones": 12,
     "subdivision_por_pulso": 2,
+
+    "metric": {
+      "strong": [0, 6],
+      "weak": [2, 4, 8, 10]
+    },
+
     "etiquetas_default": [
       { "texto": "6", "step": 0 },
       { "texto": "1", "step": 2 },
@@ -72,27 +78,6 @@
       { "texto": "3", "step": 6 },
       { "texto": "4", "step": 8 },
       { "texto": "5", "step": 10 }
-      ]       
-  },
-
-  "6_8x2": {
-    "nombre": "6/8 x2",
-    "pulsos": 12,
-    "subdivisiones": 24,
-    "subdivision_por_pulso": 2,
-    "etiquetas_default": [
-      { "texto": "6", "step": 0 },
-      { "texto": "1", "step": 2 },
-      { "texto": "2", "step": 4 },
-      { "texto": "3", "step": 6 },
-      { "texto": "4", "step": 8 },
-      { "texto": "5", "step": 10 },
-      { "texto": "6", "step": 12 },
-      { "texto": "1", "step": 14 },
-      { "texto": "2", "step": 16 },
-      { "texto": "3", "step": 18 },
-      { "texto": "4", "step": 20 },
-      { "texto": "5", "step": 22 }
     ]
   },
 
@@ -101,6 +86,12 @@
     "pulsos": 12,
     "subdivisiones": 24,
     "subdivision_por_pulso": 2,
+
+    "metric": {
+      "strong": [0, 6],
+      "weak": [2, 4, 8, 10, 12, 14, 16, 18, 20, 22]
+    },
+
     "etiquetas_default": [
       { "texto": "2", "step": 0 },
       { "texto": "1", "step": 2 },
@@ -114,39 +105,6 @@
       { "texto": "9", "step": 18 },
       { "texto": "1", "step": 20 },
       { "texto": "2", "step": 22 }
-    ]
-  },
-
-  "12_8x2": {
-    "nombre": "12/8 x2",
-    "pulsos": 24,
-    "subdivisiones": 48,
-    "subdivision_por_pulso": 2,
-    "etiquetas_default": [
-      { "texto": "2", "step": 0 },
-      { "texto": "1", "step": 2 },
-      { "texto": "2", "step": 4 },
-      { "texto": "3", "step": 6 },
-      { "texto": "4", "step": 8 },
-      { "texto": "5", "step": 10 },
-      { "texto": "6", "step": 12 },
-      { "texto": "7", "step": 14 },
-      { "texto": "8", "step": 16 },
-      { "texto": "9", "step": 18 },
-      { "texto": "10", "step": 20 },
-      { "texto": "1", "step": 22 },
-      { "texto": "2", "step": 24 },
-      { "texto": "1", "step": 26 },
-      { "texto": "2", "step": 28 },
-      { "texto": "3", "step": 30 },
-      { "texto": "4", "step": 31 },
-      { "texto": "5", "step": 32 },
-      { "texto": "6", "step": 34 },
-      { "texto": "7", "step": 36 },
-      { "texto": "8", "step": 38 },
-      { "texto": "9", "step": 40 },
-      { "texto": "10", "step": 42 },
-      { "texto": "1", "step": 44 }
     ]
   }
 }
