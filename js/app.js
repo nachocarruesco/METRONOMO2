@@ -502,7 +502,6 @@ if (!runtimeConfig.sequenceResolved || runtimeConfig.sequenceResolved.length ===
 }
 
 // Inicializar el scheduler
-const schedulerReady = initSchedulerFromConfig(runtimeConfig);
 
 if (schedulerReady) {
     logOk("✅ Scheduler inicializado correctamente");
