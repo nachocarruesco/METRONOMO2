@@ -1,37 +1,25 @@
 /*
 ==================================================
-APP PRINCIPAL
+APP.JS
 ==================================================
 
-Este archivo coordina toda la carga inicial.
+Este módulo únicamente prepara el motor.
 
-Su trabajo NO es reproducir audio.
+Responsabilidades:
 
-Su trabajo NO es dibujar.
+1. Leer los parámetros de la URL.
+2. Cargar todos los JSON.
+3. Construir runtimeConfig.
+4. Pedir al secuenciador la secuencia.
+5. Arrancar el scheduler.
 
-Su trabajo NO es generar secuencias.
+NO reproduce audio.
 
-Su único trabajo es:
+NO dibuja.
 
-1. Leer parámetros URL.
-2. Cargar archivos JSON.
-3. Resolver toda la configuración.
-4. Construir runtimeConfig.
-5. Mostrar información en el logger.
+NO conoce tiempos.
 
-Cuando termina este archivo existe un único
-objeto llamado runtimeConfig.
-
-A partir de ese momento el resto de módulos
-trabajarán solamente con runtimeConfig.
-
-De esta manera:
-
-Audio
-Canvas
-Secuenciador
-
-NO necesitan saber dónde están los JSON.
+Toda la lógica temporal pertenece al scheduler.
 
 ==================================================
 */
@@ -43,33 +31,20 @@ document.addEventListener(
 
 /*
 ==================================================
-CONFIGURACIÓN GLOBAL EN MEMORIA
+CONFIGURACIÓN GLOBAL
 ==================================================
 
-Aquí se almacenará toda la información ya
-resuelta.
+Todos los módulos accederán a este objeto.
 
-Más adelante lo utilizarán:
-
-- secuenciador
-- audio
-- dibujo
+scheduler.js
+audio.js
+canvas.js
 
 ==================================================
 */
 
-let runtimeConfig = {};
+window.runtimeConfig = {};
 
-/*
-==================================================
-FUNCIÓN PRINCIPAL
-==================================================
-
-Se ejecuta automáticamente cuando la página
-termina de cargarse.
-
-==================================================
-*/
 async function init() {
 
     logSection("INICIO");
@@ -80,7 +55,7 @@ async function init() {
 
         /*
         ==========================================
-        LEER URL
+        PARÁMETROS URL
         ==========================================
         */
 
@@ -102,6 +77,7 @@ async function init() {
             );
 
             return;
+
         }
 
         if (!presetName) {
@@ -111,45 +87,29 @@ async function init() {
             );
 
             return;
+
         }
 
         logOk(
-            `Familia recibida: ${family}`
+            `Familia: ${family}`
         );
 
         logOk(
-            `Preset recibido: ${presetName}`
+            `Preset: ${presetName}`
         );
 
         /*
         ==========================================
-        CARGAR FAMILIAS.JSON
+        FAMILIAS
         ==========================================
         */
 
         logSection("FAMILIA");
 
-        const familiasPath =
-            "./config/familias.json";
-
-        logInfo(
-            `Cargando ${familiasPath}`
-        );
-
         const familias =
             await loadJson(
-                familiasPath
+                "./config/familias.json"
             );
-
-        logOk(
-            "Archivo familias cargado"
-        );
-
-        /*
-        ==========================================
-        BUSCAR FAMILIA
-        ==========================================
-        */
 
         const familyConfig =
             familias[family];
@@ -161,38 +121,24 @@ async function init() {
             );
 
             return;
+
         }
 
         logOk(
-            `Familia encontrada: ${familyConfig.nombre}`
-        );
-
-        logInfo(
-            `Ruta presets: ${familyConfig.presets}`
-        );
-
-        logInfo(
-            `Ruta cierres: ${familyConfig.cierres}`
+            familyConfig.nombre
         );
 
         /*
         ==========================================
-        CARGAR CONFIG DEFAULT
+        CONFIGURACIÓN
         ==========================================
         */
 
         logSection("CONFIG");
 
-        const configPath =
-            familyConfig.default;
-
-        logInfo(
-            `Cargando ${configPath}`
-        );
-
         const config =
             await loadJson(
-                configPath
+                familyConfig.default
             );
 
         logOk(
@@ -201,75 +147,30 @@ async function init() {
 
         /*
         ==========================================
-        CARGAR PRESET
+        PRESET
         ==========================================
         */
 
         logSection("PRESET");
 
-        const presetPath =
-            `${familyConfig.presets}${presetName}.json`;
-
-        logInfo(
-            `Ruta preset: ${presetPath}`
-        );
-
         const preset =
             await loadJson(
-                presetPath
+
+                `${familyConfig.presets}${presetName}.json`
+
             );
 
         logOk(
-            "Preset cargado"
+            preset.name
         );
 
         /*
         ==========================================
-        MOSTRAR PRESET
-        ==========================================
-        */
-
-        logInfo(
-            `Nombre: ${preset.name}`
-        );
-
-        logInfo(
-            `Familia: ${preset.family}`
-        );
-
-        logInfo(
-            `Compás: ${preset.compas}`
-        );
-
-        logInfo(
-            "Marcas:"
-        );
-
-        Object.entries(
-            preset.marks
-        ).forEach(
-
-            ([step, sound]) => {
-
-                logInfo(
-                    `${step} -> ${sound}`
-                );
-
-            }
-
-        );
-
-        /*
-        ==========================================
-        CARGAR COMPÁS
+        COMPÁS
         ==========================================
         */
 
         logSection("COMPÁS");
-
-        logInfo(
-            "Cargando ./config/compas.json"
-        );
 
         const compases =
             await loadJson(
@@ -284,37 +185,31 @@ async function init() {
         if (!compas) {
 
             logError(
-                `No existe el compás ${preset.compas}`
+                `Compás inexistente: ${preset.compas}`
             );
 
             return;
+
         }
 
         logOk(
-            `Compás encontrado: ${compas.nombre}`
-        );
-
-        logInfo(
-            `Pulsos: ${compas.pulsos}`
-        );
-
-        logInfo(
-            `Subdivisiones: ${compas.subdivisiones}`
-        );
-
-        logInfo(
-            `Subdivisiones/pulso: ${compas.subdivision_por_pulso}`
+            compas.nombre
         );
 
         /*
         ==========================================
-        CREAR RUNTIME
+        CONSTRUIR RUNTIME
+
+        Desde este momento el resto del
+        proyecto ya no vuelve a leer JSON.
+
+        Todos los módulos trabajarán
+        únicamente con runtimeConfig.
+
         ==========================================
         */
 
-        logSection("RUNTIME");
-
-        runtimeConfig = {
+        window.runtimeConfig = {
 
             family,
 
@@ -328,243 +223,146 @@ async function init() {
 
         };
 
-        /*
-        =========================================
-        INICIALIZAR SCHEDULER AUTOMÁTICAMENTE
-        =========================================
+            /*
+        ==========================================
+        GENERAR SECUENCIA
+
+        El secuenciador transforma el preset
+        en una lista completa de pasos.
+
+        El resultado ya no depende de JSON.
+
+        El scheduler utilizará esta secuencia
+        continuamente.
+
+        ==========================================
         */
 
-        logSection("SCHEDULER");
-
-        // Verificar que el scheduler existe
-        if (typeof scheduler === 'undefined') {
-        logError("❌ Scheduler no está definido");
-        } else {
-        logOk("✅ Scheduler existe");
-        }
-
-        // Inicializar el scheduler con la configuración
-        const schedulerReady = initSchedulerFromConfig(runtimeConfig);
-
-        if (schedulerReady) {
-            logOk("✅ Scheduler inicializado correctamente");
-    
-        // Iniciar el scheduler automáticamente (para pruebas)
-        logInfo("▶️ Iniciando scheduler automáticamente...");
-        scheduler.start();
-    
-        logOk("✅ Scheduler en marcha");
-        } else {
-            logError("❌ Error al inicializar el scheduler");
-        }
-        
-        
         logSection("SECUENCIA");
 
-        
-        const sequenceResolved =
-            buildSequence(runtimeConfig);
-        
-        runtimeConfig.sequenceResolved =
-        sequenceResolved;
+        window.runtimeConfig.sequenceResolved =
+            buildSequence(
+                window.runtimeConfig
+            );
 
-       
+        /*
+        ==========================================
+        MOSTRAR SECUENCIA
 
-        sequenceResolved.forEach((step) => {
+        Solo para depuración.
 
-            logInfo("--------------------------------");
+        Cuando el proyecto esté terminado
+        este bloque podrá eliminarse sin que
+        afecte al funcionamiento.
 
-            logInfo(
+        ==========================================
+        */
+
+        window.runtimeConfig.sequenceResolved.forEach(
+
+            (step) => {
+
+                logInfo("--------------------------------");
+
+                logInfo(
                     `Paso: ${step.step}`
-            );
-
-            logInfo(
-                `Etiqueta: ${
-                    step.label ?? "-"
-                }`
-            );
-
-            logInfo(
-                `Métrica: ${
-                    step.metric ?? "-"
-                }`
-            );
-
-            if (step.events.length === 0) {
-
-                logInfo(
-                    "Eventos: ninguno"
                 );
 
-        }
-                
-        else {
-
-            logInfo(
-                "Eventos:"
-            );
-
-            step.events.forEach((event) => {
-
                 logInfo(
-                    `   Tipo: ${event.type}   Acento: ${event.accent}`
+                    `Etiqueta: ${step.label ?? "-"}`
                 );
 
-            });
+                logInfo(
+                    `Métrica: ${step.metric}`
+                );
 
-        }
+                if (step.events.length === 0) {
 
-    });
+                    logInfo(
+                        "Eventos: ninguno"
+                    );
+
+                }
+
+                else {
+
+                    logInfo(
+                        "Eventos:"
+                    );
+
+                    step.events.forEach(
+
+                        (event) => {
+
+                            logInfo(
+
+                                `Tipo: ${event.type}   Acento: ${event.accent}`
+
+                            );
+
+                        }
+
+                    );
+
+                }
+
+            }
+
+        );
+
+        logOk(
+            "Secuencia generada"
+        );
+
+        /*
+        ==========================================
+        DIBUJO INICIAL
+
+        El canvas únicamente representa el
+        estado actual.
+
+        Más adelante será el scheduler quien
+        lo actualice continuamente.
+
+        ==========================================
+        */
+
+        drawCompas();
+
+        /*
+        ==========================================
+        ARRANCAR EL SCHEDULER
+
+        A partir de aquí el control deja de
+        pertenecer a app.js.
+
+        app.js termina su trabajo.
+
+        El scheduler será el dueño del reloj
+        del metrónomo.
+
+        ==========================================
+        */
+
+        startScheduler(
+            window.runtimeConfig
+        );
+
+        logSection("RUNTIME");
 
         logOk(
             "Runtime creado"
         );
 
-        drawCompas();
-
         console.log(
-            runtimeConfig
-        );
-
-        /*
-=========================================
-CREAR RUNTIME
-=========================================
-*/
-
-logSection("RUNTIME");
-
-runtimeConfig = {
-    family,
-    familyConfig,
-    config,
-    preset,
-    compas
-};
-
-/*
-=========================================
-CREAR SECUENCIA
-=========================================
-*/
-
-logSection("SECUENCIA");
-
-
-runtimeConfig.sequenceResolved = sequenceResolved;
-
-// Mostrar la secuencia en el logger
-sequenceResolved.forEach((step) => {
-    logInfo("--------------------------------");
-    logInfo(`Paso: ${step.step}`);
-    logInfo(`Etiqueta: ${step.label ?? "-"}`);
-    logInfo(`Métrica: ${step.metric ?? "-"}`);
-    
-    if (step.events.length === 0) {
-        logInfo("Eventos: ninguno");
-    } else {
-        logInfo("Eventos:");
-        step.events.forEach((event) => {
-            logInfo(`   Tipo: ${event.type}   Acento: ${event.accent}`);
-        });
-    }
-});
-
-logOk("Runtime creado");
-
-// Dibujar el canvas
-drawCompas();
-
-console.log(runtimeConfig);
-
-/*
-=========================================
-🎯 INICIALIZAR SCHEDULER - ¡AQUÍ VA!
-=========================================
-*/
-
-logSection("SCHEDULER");
-
-// Verificar que el scheduler existe
-if (typeof scheduler === 'undefined') {
-    logError("❌ Scheduler no está definido");
-} else {
-    logOk("✅ Scheduler existe");
-    logInfo(`📊 scheduler.totalSteps: ${scheduler.totalSteps}`);
-}
-
-// Verificar que sequenceResolved existe
-if (!runtimeConfig.sequenceResolved || runtimeConfig.sequenceResolved.length === 0) {
-    logError("❌ No hay secuencia resuelta en runtimeConfig");
-    logInfo(`   sequenceResolved: ${runtimeConfig.sequenceResolved}`);
-} else {
-    logOk(`✅ Secuencia encontrada: ${runtimeConfig.sequenceResolved.length} pasos`);
-}
-
-// Inicializar el scheduler
-
-if (schedulerReady) {
-    logOk("✅ Scheduler inicializado correctamente");
-    logInfo(`📊 Pasos en secuencia: ${scheduler.totalSteps}`);
-    logInfo(`📊 Intervalo: ${scheduler.intervalMs}ms`);
-    
-    // 🔥 INICIAR EL SCHEDULER AUTOMÁTICAMENTE
-    logInfo("▶️ Iniciando scheduler automáticamente...");
-    scheduler.start();
-    
-    logOk("✅ Scheduler en marcha");
-} else {
-    logError("❌ Error al inicializar el scheduler");
-}
-
-/*
-=========================================
-RESUMEN
-=========================================
-*/
-
-logInfo(`Instrumento: ${config.audio.instrumento}`);
-logInfo(`BPM default: ${config.bpm.default}`);
-logInfo(`Claqueta: ${config.claqueta.enabled ? "ON" : "OFF"}`);
-logInfo(`Cierres: ${config.cierres.enabled ? "ON" : "OFF"}`);
-
-logOk("Fase de carga completada");
-        
-        /*
-        ==========================================
-        RESUMEN
-        ==========================================
-        */
-
-        logInfo(
-            `Instrumento: ${config.audio.instrumento}`
-        );
-
-        logInfo(
-            `BPM default: ${config.bpm.default}`
-        );
-
-        logInfo(
-            `Claqueta: ${
-                config.claqueta.enabled
-                    ? "ON"
-                    : "OFF"
-            }`
-        );
-
-        logInfo(
-            `Cierres: ${
-                config.cierres.enabled
-                    ? "ON"
-                    : "OFF"
-            }`
+            window.runtimeConfig
         );
 
         logOk(
-            "Fase de carga completada"
-        );
+            "Fase de carga completada";
 
     }
+
     catch (error) {
 
         console.error(error);
@@ -582,9 +380,9 @@ logOk("Fase de carga completada");
 CARGADOR GENÉRICO DE JSON
 ==================================================
 
-Recibe una ruta.
+Lee un archivo JSON y devuelve un objeto.
 
-Devuelve un objeto JavaScript.
+Todos los módulos utilizan esta función.
 
 ==================================================
 */
@@ -603,5 +401,5 @@ async function loadJson(path) {
     }
 
     return await response.json();
-}
 
+}
