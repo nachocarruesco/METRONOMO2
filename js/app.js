@@ -336,7 +336,7 @@ async function init() {
         runtimeConfig.sequenceResolved =
         sequenceResolved;
 
-        console.log(JSON.stringify(step.events, null, 4));
+       
 
         sequenceResolved.forEach((step) => {
 
