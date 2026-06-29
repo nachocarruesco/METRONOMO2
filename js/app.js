@@ -359,7 +359,8 @@ async function init() {
         );
 
         logOk(
-            "Fase de carga completada";
+            "Fase de carga completada"
+            );
 
     }
 
