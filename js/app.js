@@ -404,3 +404,37 @@ async function loadJson(path) {
     return await response.json();
 
 }
+/*
+=========================================
+GENERAR SECUENCIA
+=========================================
+*/
+
+window.runtimeConfig.sequenceResolved =
+    buildSequence(window.runtimeConfig);
+
+/*
+=========================================
+ARRANCAR EL SCHEDULER AUTOMÁTICAMENTE
+=========================================
+*/
+
+logSection("▶️ INICIANDO SCHEDULER");
+
+const bpm = window.runtimeConfig.config.bpm.default || 120;
+
+startScheduler({
+    sequence: window.runtimeConfig.sequenceResolved,
+    bpm: bpm,
+    callbacks: {
+        onStep: function(stepIndex, stepData, lap) {
+            // Aquí irá Canvas.setCurrentStep(stepIndex)
+            // Por ahora, solo logger
+        },
+        onLapComplete: function(lapCount) {
+            // Aquí irá actualizar el contador de vueltas
+        }
+    }
+});
+
+logOk("✅ Scheduler iniciado automáticamente");
