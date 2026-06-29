@@ -441,29 +441,3 @@ CONSTRUCCIÓN DE SECUENCIA
 ==================================================
 */
 
-function buildSequence(
-    preset,
-    compas
-) {
-
-    const sequence =
-        new Array(
-            compas.subdivisiones
-        ).fill(null);
-
-    Object.entries(
-        preset.marks
-    ).forEach(
-
-        ([step, sound]) => {
-
-            sequence[
-                parseInt(step)
-            ] = sound;
-
-        }
-
-    );
-
-    return sequence;
-}
