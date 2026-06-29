@@ -450,7 +450,7 @@ CREAR SECUENCIA
 
 logSection("SECUENCIA");
 
-const sequenceResolved = buildSequence(runtimeConfig);
+
 runtimeConfig.sequenceResolved = sequenceResolved;
 
 // Mostrar la secuencia en el logger
