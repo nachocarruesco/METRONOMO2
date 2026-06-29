@@ -336,19 +336,51 @@ async function init() {
         runtimeConfig.sequenceResolved =
         sequenceResolved;
 
-        sequenceResolved.forEach(
+        sequenceResolved.forEach((step) => {
 
-            (sound, index) => {
+            logInfo("--------------------------------");
+
+            logInfo(
+                    `Paso: ${step.step}`
+            );
+
+            logInfo(
+                `Etiqueta: ${
+                    step.label ?? "-"
+                }`
+            );
+
+            logInfo(
+                `Métrica: ${
+                    step.metric ?? "-"
+                }`
+            );
+
+            if (step.events.length === 0) {
 
                 logInfo(
-                    `${index} -> ${
-                        sound || "silencio"
-                    }`
+                    "Eventos: ninguno"
                 );
 
-            }
+        }
+                
+        else {
 
-        );
+            logInfo(
+                "Eventos:"
+            );
+
+            step.events.forEach((event) => {
+
+                logInfo(
+                    `   Tipo: ${event.type}   Acento: ${event.accent}`
+                );
+
+            });
+
+        }
+
+    });
 
         logOk(
             "Runtime creado"
@@ -434,10 +466,4 @@ async function loadJson(path) {
 
     return await response.json();
 }
-
-/*
-==================================================
-CONSTRUCCIÓN DE SECUENCIA
-==================================================
-*/
 
