@@ -1,96 +1,33 @@
-/*
---------------------------------------------------
-LOGGER DEL PROYECTO
---------------------------------------------------
+logSection("SECUENCIA");
 
-Este módulo centraliza todos los mensajes de
-depuración.
+sequenceResolved.forEach(step => {
 
-Ventajas:
+    let texto = `Paso ${step.step}`;
 
-- Todo aparece en pantalla.
-- Todo aparece en consola.
-- Si algo falla sabremos en qué paso.
+    if (step.label) {
 
-Más adelante bastará cambiar DEBUG=false
-para ocultar el panel.
---------------------------------------------------
-*/
+        texto += ` | ${step.label}`;
 
-const DEBUG = true;
-
-/*
---------------------------------------------------
-Añade una línea al panel de log.
---------------------------------------------------
-*/
-
-function writeLog(message, type = "INFO") {
-
-    const text = `[${type}] ${message}`;
-
-    console.log(text);
-
-    if (!DEBUG) {
-        return;
     }
 
-    const logDiv = document.getElementById("log");
+    texto += ` | ${step.metric}`;
 
-    if (!logDiv) {
-        return;
+    if (step.events.length === 0) {
+
+        texto += " | silencio";
+
     }
 
-    const line = document.createElement("div");
+    else {
 
-    line.className = `log-${type.toLowerCase()}`;
+        step.events.forEach(event => {
 
-    line.textContent = text;
+            texto += ` | ${event.symbol}`;
 
-    logDiv.appendChild(line);
-}
+        });
 
-/*
---------------------------------------------------
-Mensajes estándar
---------------------------------------------------
-*/
+    }
 
-function logInfo(message) {
-    writeLog(message, "INFO");
-}
+    logInfo(texto);
 
-function logOk(message) {
-    writeLog(message, "OK");
-}
-
-function logError(message) {
-    writeLog(message, "ERROR");
-}
-/*
---------------------------------------------------
-Muestra una sección visual.
-
-Sirve para separar bloques del log.
-
-Ejemplo:
-
-===== PRESET =====
-
-===== COMPÁS =====
-
---------------------------------------------------
-*/
-
-function logSection(title) {
-
-    writeLog(
-        `===== ${title} =====`,
-        "INFO"
-    );
-
-}
-window.logInfo = logInfo;
-window.logOk = logOk;
-window.logError = logError;
-window.logSection = logSection;
+});
