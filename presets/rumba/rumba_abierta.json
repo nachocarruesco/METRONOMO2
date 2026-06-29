@@ -1,10 +1,29 @@
 {
     "name": "Rumba Abierta",
     "family": "rumba",
-     "compas": "4_4",
-     "marks": {
-        "0": "grave",
-        "3": "grave",
-        "6": "agudo"
+    "compas": "4_4",
+
+    "marks": {
+
+        "0": [
+            {
+                "type": "G",
+                "accent": "H"
+            }
+        ],
+
+        "3": [
+            {
+                "type": "G",
+                "accent": "M"
+            }
+        ],
+
+        "6": [
+            {
+                "type": "C",
+                "accent": "H"
+            }
+        ]
     }
 }
