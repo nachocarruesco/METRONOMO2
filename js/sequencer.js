@@ -67,109 +67,19 @@ musical necesaria.
 ==================================================
 */
 
-function buildStep(
-    step,
-    preset,
-    compas
-) {
+/*
+------------------------------------------
+EVENTOS DEL PRESET
+------------------------------------------
+*/
 
-    const events = [];
+const presetEvents =
+    preset.marks[String(step)];
 
-    /*
-    ------------------------------------------
-    SONIDO DEL PRESET
-    ------------------------------------------
-    */
+if (presetEvents) {
 
-    const sound =
-        preset.marks[String(step)];
-
-    if (sound) {
-
-        events.push({
-
-            type: "sound",
-
-            symbol: sound
-
-        });
-
-    }
-
-    /*
-    ------------------------------------------
-    MÉTRICA DEL COMPÁS
-
-    K = tiempo fuerte
-
-    L = tiempo débil
-
-    ------------------------------------------
-    */
-
-    let metric = "L";
-
-    if (
-        compas.metric &&
-        compas.metric.strong.includes(step)
-    ) {
-
-        metric = "K";
-
-    }
-
-    /*
-    ------------------------------------------
-    ETIQUETA VISUAL
-
-    1
-
-    2
-
-    3
-
-    4
-
-    etc.
-
-    ------------------------------------------
-    */
-
-    let label = null;
-
-    if (compas.etiquetas_default) {
-
-        const tag =
-            compas.etiquetas_default.find(
-
-                item => item.step === step
-
-            );
-
-        if (tag) {
-
-            label = tag.texto;
-
-        }
-
-    }
-
-    /*
-    ------------------------------------------
-    DEVOLVER PASO
-    ------------------------------------------
-    */
-
-    return {
-
-        step,
-
-        metric,
-
-        label,
-
-        events
-
-    };
+    events.push(
+        ...presetEvents
+    );
 
 }
