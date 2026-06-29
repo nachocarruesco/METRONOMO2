@@ -6,8 +6,8 @@
     "subdivision_por_pulso": 2,
 
     "metric": {
-      "strong": [0],
-      "weak": [2, 4, 6]
+      "strong": [0, 4],
+      "weak": [2, 6]
     },
 
     "etiquetas_default": [
@@ -25,8 +25,8 @@
     "subdivision_por_pulso": 2,
 
     "metric": {
-      "strong": [0, 8],
-      "weak": [2, 4, 6, 10, 12, 14]
+      "strong": [0, 4, 8, 10],
+      "weak": [2, 6, 12, 14]
     },
 
     "etiquetas_default": [
@@ -48,8 +48,8 @@
     "subdivision_por_pulso": 3,
 
     "metric": {
-      "strong": [0],
-      "weak": [3, 6, 9]
+      "strong": [0, 6],
+      "weak": [3, 9]
     },
 
     "etiquetas_default": [
@@ -67,7 +67,7 @@
     "subdivision_por_pulso": 2,
 
     "metric": {
-      "strong": [0, 6],
+      "strong": [0, 3, 6, 9],
       "weak": [2, 4, 8, 10]
     },
 
@@ -88,8 +88,8 @@
     "subdivision_por_pulso": 2,
 
     "metric": {
-      "strong": [0, 6],
-      "weak": [2, 4, 8, 10, 12, 14, 16, 18, 20, 22]
+      "strong": [0, 3, 6, 9, 12, 15, 18, 21],
+      "weak": [2, 4, 8, 10, 14, 16, 20, 22]
     },
 
     "etiquetas_default": [
