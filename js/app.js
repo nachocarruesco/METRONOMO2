@@ -327,6 +327,38 @@ async function init() {
             compas
 
         };
+
+        /*
+        =========================================
+        INICIALIZAR SCHEDULER AUTOMÁTICAMENTE
+        =========================================
+        */
+
+        logSection("SCHEDULER");
+
+        // Verificar que el scheduler existe
+        if (typeof scheduler === 'undefined') {
+        logError("❌ Scheduler no está definido");
+        } else {
+        logOk("✅ Scheduler existe");
+        }
+
+        // Inicializar el scheduler con la configuración
+        const schedulerReady = initSchedulerFromConfig(runtimeConfig);
+
+        if (schedulerReady) {
+            logOk("✅ Scheduler inicializado correctamente");
+    
+        // Iniciar el scheduler automáticamente (para pruebas)
+        logInfo("▶️ Iniciando scheduler automáticamente...");
+        scheduler.start();
+    
+        logOk("✅ Scheduler en marcha");
+        } else {
+            logError("❌ Error al inicializar el scheduler");
+        }
+        
+        
         logSection("SECUENCIA");
 
         
