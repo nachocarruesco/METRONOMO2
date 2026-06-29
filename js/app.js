@@ -329,12 +329,10 @@ async function init() {
         };
         logSection("SECUENCIA");
 
+        
         const sequenceResolved =
-            buildSequence(
-                preset,
-                compas
-            );
-
+            buildSequence(runtimeConfig);
+        
         runtimeConfig.sequenceResolved =
         sequenceResolved;
 
