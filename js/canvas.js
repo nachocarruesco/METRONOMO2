@@ -6,8 +6,8 @@ CANVAS.JS
 Responsabilidades:
 
 1. Dibujar el compás.
-2. Dibujar las etiquetas.
-3. Dibujar eventos (graves y agudos).
+2. Dibujar las etiquetas (desde step.label).
+3. Dibujar eventos (graves y agudos desde step.events).
 4. Mostrar paso activo.
 5. Mostrar aguja.
 
@@ -111,65 +111,6 @@ function drawCompas() {
 
     /*
     ------------------------------------------
-    ETIQUETAS
-    ------------------------------------------
-    */
-
-    const labels =
-        runtimeConfig.compas
-            .etiquetas_default;
-
-    if (labels) {
-
-        labels.forEach(
-
-            label => {
-
-                const angle =
-                    getStepAngle(
-                        label.step,
-                        totalSteps
-                    );
-
-                const x =
-                    cx +
-                    Math.cos(angle) *
-                    (radius + 40);
-
-                const y =
-                    cy +
-                    Math.sin(angle) *
-                    (radius + 40);
-
-                // Resaltar la etiqueta del paso activo
-                ctx.fillStyle =
-                    (currentStep === label.step) 
-                        ? "#00ff88" 
-                        : "#ffffff";
-
-                ctx.font =
-                    "bold 24px Arial";
-
-                ctx.textAlign =
-                    "center";
-
-                ctx.textBaseline =
-                    "middle";
-
-                ctx.fillText(
-                    label.texto,
-                    x,
-                    y
-                );
-
-            }
-
-        );
-
-    }
-
-    /*
-    ------------------------------------------
     DIBUJAR STEPS CON SUS EVENTOS
     ------------------------------------------
     */
@@ -199,6 +140,56 @@ function drawCompas() {
 
             /*
             ------------------------------
+            ETIQUETA DEL STEP (step.label)
+            ------------------------------
+            */
+
+            if (stepData.label) {
+
+                const labelAngle = angle;
+                const labelOffset = 40;
+                
+                const labelX =
+                    cx +
+                    Math.cos(labelAngle) *
+                    (radius + labelOffset);
+
+                const labelY =
+                    cy +
+                    Math.sin(labelAngle) *
+                    (radius + labelOffset);
+
+                // Color según la etiqueta
+                let labelColor = "#ffffff";
+                
+                if (stepData.label === "C") {
+                    labelColor = "#ff4444"; // Rojo para Cierre
+                } else if (stepData.metric === "K") {
+                    labelColor = "#00ff88"; // Verde para tiempos fuertes
+                } else {
+                    labelColor = "#ffffff"; // Blanco para otros
+                }
+
+                // Resaltar si está activo
+                if (isActive) {
+                    labelColor = "#ffcc00";
+                }
+
+                ctx.fillStyle = labelColor;
+                ctx.font = "bold 24px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                ctx.fillText(
+                    stepData.label,
+                    labelX,
+                    labelY
+                );
+
+            }
+
+            /*
+            ------------------------------
             SI EL PASO TIENE EVENTOS
             ------------------------------
             */
@@ -217,21 +208,23 @@ function drawCompas() {
                         const offsetX = 
                             eventIndex === 0 
                                 ? 0 
-                                : (eventIndex * 8);
+                                : (eventIndex * 10 - 5);
 
                         const offsetY = 
                             eventIndex === 0 
                                 ? 0 
-                                : (eventIndex * 8);
+                                : (eventIndex * 10 - 5);
 
                         const eventX = x + offsetX;
                         const eventY = y + offsetY;
 
                         // Color según acento
                         let color = "#ffffff";
+                        let glowColor = null;
                         
                         if (event.accent === "H") {
                             color = "#ffcc00"; // Acento fuerte
+                            glowColor = "rgba(255, 204, 0, 0.3)";
                         } else if (event.accent === "M") {
                             color = "#ffaa44"; // Acento medio
                         } else if (event.accent === "L") {
@@ -241,6 +234,7 @@ function drawCompas() {
                         // Si está activo, resaltar más
                         if (isActive) {
                             color = "#00ff88";
+                            glowColor = "rgba(0, 255, 136, 0.3)";
                         }
 
                         ctx.strokeStyle = color;
@@ -249,7 +243,7 @@ function drawCompas() {
 
                         /*
                         ------------------------------
-                        TIPO: GRAVE
+                        TIPO: GRAVE (G)
                         ------------------------------
                         */
 
@@ -259,6 +253,12 @@ function drawCompas() {
 
                             const graveRadius = 
                                 isActive ? 20 : 16;
+
+                            // Glow para acentos fuertes o activos
+                            if (glowColor) {
+                                ctx.shadowColor = glowColor;
+                                ctx.shadowBlur = 20;
+                            }
 
                             ctx.beginPath();
 
@@ -274,9 +274,13 @@ function drawCompas() {
 
                             // Relleno suave para graves
                             if (!isActive) {
-                                ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+                                ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
                                 ctx.fill();
                             }
+
+                            // Resetear shadow
+                            ctx.shadowColor = "transparent";
+                            ctx.shadowBlur = 0;
 
                             return;
 
@@ -284,7 +288,7 @@ function drawCompas() {
 
                         /*
                         ------------------------------
-                        TIPO: AGUDO
+                        TIPO: AGUDO (A)
                         ------------------------------
                         */
 
@@ -294,6 +298,12 @@ function drawCompas() {
 
                             const size =
                                 isActive ? 16 : 12;
+
+                            // Glow para acentos fuertes o activos
+                            if (glowColor) {
+                                ctx.shadowColor = glowColor;
+                                ctx.shadowBlur = 20;
+                            }
 
                             ctx.beginPath();
 
@@ -319,13 +329,17 @@ function drawCompas() {
 
                             ctx.stroke();
 
+                            // Resetear shadow
+                            ctx.shadowColor = "transparent";
+                            ctx.shadowBlur = 0;
+
                             return;
 
                         }
 
                         /*
                         ------------------------------
-                        TIPO: SILENCIO (no debería ocurrir)
+                        TIPO: SILENCIO (S)
                         ------------------------------
                         */
 
