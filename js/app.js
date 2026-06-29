@@ -427,6 +427,111 @@ async function init() {
         );
 
         /*
+=========================================
+CREAR RUNTIME
+=========================================
+*/
+
+logSection("RUNTIME");
+
+runtimeConfig = {
+    family,
+    familyConfig,
+    config,
+    preset,
+    compas
+};
+
+/*
+=========================================
+CREAR SECUENCIA
+=========================================
+*/
+
+logSection("SECUENCIA");
+
+const sequenceResolved = buildSequence(runtimeConfig);
+runtimeConfig.sequenceResolved = sequenceResolved;
+
+// Mostrar la secuencia en el logger
+sequenceResolved.forEach((step) => {
+    logInfo("--------------------------------");
+    logInfo(`Paso: ${step.step}`);
+    logInfo(`Etiqueta: ${step.label ?? "-"}`);
+    logInfo(`Métrica: ${step.metric ?? "-"}`);
+    
+    if (step.events.length === 0) {
+        logInfo("Eventos: ninguno");
+    } else {
+        logInfo("Eventos:");
+        step.events.forEach((event) => {
+            logInfo(`   Tipo: ${event.type}   Acento: ${event.accent}`);
+        });
+    }
+});
+
+logOk("Runtime creado");
+
+// Dibujar el canvas
+drawCompas();
+
+console.log(runtimeConfig);
+
+/*
+=========================================
+🎯 INICIALIZAR SCHEDULER - ¡AQUÍ VA!
+=========================================
+*/
+
+logSection("SCHEDULER");
+
+// Verificar que el scheduler existe
+if (typeof scheduler === 'undefined') {
+    logError("❌ Scheduler no está definido");
+} else {
+    logOk("✅ Scheduler existe");
+    logInfo(`📊 scheduler.totalSteps: ${scheduler.totalSteps}`);
+}
+
+// Verificar que sequenceResolved existe
+if (!runtimeConfig.sequenceResolved || runtimeConfig.sequenceResolved.length === 0) {
+    logError("❌ No hay secuencia resuelta en runtimeConfig");
+    logInfo(`   sequenceResolved: ${runtimeConfig.sequenceResolved}`);
+} else {
+    logOk(`✅ Secuencia encontrada: ${runtimeConfig.sequenceResolved.length} pasos`);
+}
+
+// Inicializar el scheduler
+const schedulerReady = initSchedulerFromConfig(runtimeConfig);
+
+if (schedulerReady) {
+    logOk("✅ Scheduler inicializado correctamente");
+    logInfo(`📊 Pasos en secuencia: ${scheduler.totalSteps}`);
+    logInfo(`📊 Intervalo: ${scheduler.intervalMs}ms`);
+    
+    // 🔥 INICIAR EL SCHEDULER AUTOMÁTICAMENTE
+    logInfo("▶️ Iniciando scheduler automáticamente...");
+    scheduler.start();
+    
+    logOk("✅ Scheduler en marcha");
+} else {
+    logError("❌ Error al inicializar el scheduler");
+}
+
+/*
+=========================================
+RESUMEN
+=========================================
+*/
+
+logInfo(`Instrumento: ${config.audio.instrumento}`);
+logInfo(`BPM default: ${config.bpm.default}`);
+logInfo(`Claqueta: ${config.claqueta.enabled ? "ON" : "OFF"}`);
+logInfo(`Cierres: ${config.cierres.enabled ? "ON" : "OFF"}`);
+
+logOk("Fase de carga completada");
+        
+        /*
         ==========================================
         RESUMEN
         ==========================================
