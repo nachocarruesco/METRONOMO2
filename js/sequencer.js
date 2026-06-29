@@ -80,27 +80,22 @@ function buildStep(
 
     const events = [];
 
-    /*
-    ------------------------------------------
-    SONIDO DEL PRESET
-    ------------------------------------------
-    */
+   /*
+------------------------------------------
+EVENTOS DEL PRESET
+------------------------------------------
+*/
 
-    const sound =
-        preset.marks[String(step)];
+const presetEvents =
+    preset.marks[String(step)];
 
-    if (sound) {
+if (presetEvents) {
 
-        events.push({
+    events.push(
+        ...presetEvents
+    );
 
-            type: "sound",
-
-            symbol: sound
-
-        });
-
-    }
-
+}
     /*
     ------------------------------------------
     MÉTRICA DEL COMPÁS
