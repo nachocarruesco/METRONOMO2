@@ -67,6 +67,7 @@ function logOk(message) {
 function logError(message) {
     writeLog(message, "ERROR");
 }
+
 /*
 --------------------------------------------------
 Muestra una sección visual.
@@ -81,50 +82,28 @@ Ejemplo:
 
 --------------------------------------------------
 */
-logSection("SECUENCIA");
-
-sequenceResolved.forEach(step => {
-
-    let texto = `Paso ${step.step}`;
-
-    if (step.label) {
-
-        texto += ` | ${step.label}`;
-
-    }
-
-    texto += ` | ${step.metric}`;
-
-    if (step.events.length === 0) {
-
-        texto += " | silencio";
-
-    }
-
-    else {
-
-        step.events.forEach(event => {
-
-            texto += ` | ${event.symbol}`;
-
-        });
-
-    }
-
-    logInfo(texto);
-
-});
 
 function logSection(title) {
-
-    writeLog(
-        `===== ${title} =====`,
-        "INFO"
-    );
-
+    writeLog(`===== ${title} =====`, "INFO");
 }
+
+/*
+--------------------------------------------------
+EXPORTAR FUNCIONES GLOBALES
+--------------------------------------------------
+*/
+
 window.logInfo = logInfo;
 window.logOk = logOk;
 window.logError = logError;
 window.logSection = logSection;
+window.writeLog = writeLog;
+window.DEBUG = DEBUG;
 
+/*
+--------------------------------------------------
+INICIALIZACIÓN DEL LOGGER (SOLO ESTO)
+--------------------------------------------------
+*/
+
+logInfo("📋 Logger cargado correctamente");
