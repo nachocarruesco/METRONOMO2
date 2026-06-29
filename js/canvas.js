@@ -7,11 +7,10 @@ Responsabilidades:
 
 1. Dibujar el compás.
 2. Dibujar las etiquetas (desde step.label).
-3. Dibujar eventos (graves y agudos desde step.events).
-4. Mostrar paso activo.
-5. Mostrar aguja.
-
-Trabaja exclusivamente con runtimeConfig.sequenceResolved
+3. Dibujar eventos:
+   - "G" = Grave (círculo)
+   - "C" = Agudo (X)  ← ¡Ahora soporta C!
+4. Mostrar paso activo y aguja.
 
 ==================================================
 */
@@ -159,12 +158,11 @@ function drawCompas() {
                     Math.sin(labelAngle) *
                     (radius + labelOffset);
 
-                // Color según la etiqueta
+                // Color según la métrica
                 let labelColor = "#ffffff";
                 
-                if (stepData.label === "C") {
-                    labelColor = "#ff4444"; // Rojo para Cierre
-                } else if (stepData.metric === "K") {
+                // Si la métrica es K (fuerte) 
+                if (stepData.metric === "K") {
                     labelColor = "#00ff88"; // Verde para tiempos fuertes
                 } else {
                     labelColor = "#ffffff"; // Blanco para otros
@@ -206,28 +204,32 @@ function drawCompas() {
 
                         // Desplazar ligeramente si hay múltiples eventos
                         const offsetX = 
-                            eventIndex === 0 
-                                ? 0 
-                                : (eventIndex * 10 - 5);
+                            stepData.events.length > 1
+                                ? (eventIndex * 10 - 5)
+                                : 0;
 
                         const offsetY = 
-                            eventIndex === 0 
-                                ? 0 
-                                : (eventIndex * 10 - 5);
+                            stepData.events.length > 1
+                                ? (eventIndex * 10 - 5)
+                                : 0;
 
                         const eventX = x + offsetX;
                         const eventY = y + offsetY;
+
+                        // Normalizar el tipo (por si viene en minúsculas)
+                        const eventType = event.type ? event.type.toUpperCase() : '';
+                        const eventAccent = event.accent || "M";
 
                         // Color según acento
                         let color = "#ffffff";
                         let glowColor = null;
                         
-                        if (event.accent === "H") {
+                        if (eventAccent === "H") {
                             color = "#ffcc00"; // Acento fuerte
                             glowColor = "rgba(255, 204, 0, 0.3)";
-                        } else if (event.accent === "M") {
+                        } else if (eventAccent === "M") {
                             color = "#ffaa44"; // Acento medio
-                        } else if (event.accent === "L") {
+                        } else if (eventAccent === "L") {
                             color = "#ffffff"; // Acento ligero
                         }
 
@@ -247,14 +249,11 @@ function drawCompas() {
                         ------------------------------
                         */
 
-                        if (
-                            event.type === "G"
-                        ) {
+                        if (eventType === "G") {
 
                             const graveRadius = 
                                 isActive ? 20 : 16;
 
-                            // Glow para acentos fuertes o activos
                             if (glowColor) {
                                 ctx.shadowColor = glowColor;
                                 ctx.shadowBlur = 20;
@@ -278,7 +277,6 @@ function drawCompas() {
                                 ctx.fill();
                             }
 
-                            // Resetear shadow
                             ctx.shadowColor = "transparent";
                             ctx.shadowBlur = 0;
 
@@ -288,18 +286,16 @@ function drawCompas() {
 
                         /*
                         ------------------------------
-                        TIPO: AGUDO (A)
+                        TIPO: AGUDO (C) ← ¡AHORA SOPORTA C!
+                        "C" = Do en notación musical = Agudo
                         ------------------------------
                         */
 
-                        if (
-                            event.type === "A"
-                        ) {
+                        if (eventType === "C") {
 
                             const size =
                                 isActive ? 16 : 12;
 
-                            // Glow para acentos fuertes o activos
                             if (glowColor) {
                                 ctx.shadowColor = glowColor;
                                 ctx.shadowBlur = 20;
@@ -307,6 +303,7 @@ function drawCompas() {
 
                             ctx.beginPath();
 
+                            // Dibujar la X
                             ctx.moveTo(
                                 eventX - size,
                                 eventY - size
@@ -329,7 +326,6 @@ function drawCompas() {
 
                             ctx.stroke();
 
-                            // Resetear shadow
                             ctx.shadowColor = "transparent";
                             ctx.shadowBlur = 0;
 
@@ -339,13 +335,11 @@ function drawCompas() {
 
                         /*
                         ------------------------------
-                        TIPO: SILENCIO (S)
+                        TIPO: SILENCIO (S) o DESCONOCIDO
                         ------------------------------
                         */
 
-                        if (
-                            event.type === "S"
-                        ) {
+                        if (eventType === "S" || !eventType) {
 
                             ctx.beginPath();
 
@@ -362,6 +356,26 @@ function drawCompas() {
                             return;
 
                         }
+
+                        /*
+                        ------------------------------
+                        TIPO DESCONOCIDO: Dibujar un punto
+                        ------------------------------
+                        */
+
+                        ctx.beginPath();
+
+                        ctx.arc(
+                            eventX,
+                            eventY,
+                            8,
+                            0,
+                            Math.PI * 2
+                        );
+
+                        ctx.fill();
+
+                        return;
 
                     }
 
