@@ -5,418 +5,215 @@ SCHEDULER
 
 Responsabilidad:
 
-Ser el ÚNICO dueño del reloj del metrónomo.
+Es el reloj del metrónomo.
 
-EN ESTA VERSIÓN DE PRUEBAS:
+No sabe cómo se dibuja.
 
-- NO usa AudioContext.
-- NO reproduce audio.
-- NO dibuja en canvas.
-- SOLO muestra eventos en el logger.
+No sabe cómo suena.
 
-Quién lo llama:
+Únicamente decide CUÁNDO ocurre cada paso
+y envía ese paso a los distintos módulos.
 
-- app.js (al iniciar, con startScheduler)
+En el futuro enviará los eventos a:
+
+- audio.js
+- canvas.js
 
 ==================================================
 */
+
+let schedulerTimer = null;
+
+let schedulerStep = 0;
+
+let schedulerRunning = false;
 
 /*
 ==================================================
-VARIABLES PRIVADAS
+INICIAR
 ==================================================
 */
 
-// Estado del scheduler
-let isRunning = false;
-let sequence = [];
-let totalSteps = 0;
-let currentStepIndex = 0;
-let lapCount = 0;
+function startScheduler() {
 
-// Timing
-let startTime = 0;
-let bpm = 120;
-let intervalMs = 0;
-
-// Loop interno (usamos setInterval, no AudioContext)
-let timerId = null;
-
-// Estadísticas
-let stats = {
-    stepsScheduled: 0,
-    stepsExecuted: 0,
-    lapsCompleted: 0
-};
-
-// Callbacks para cuando el scheduler esté listo
-let onStepCallback = null;
-let onLapCompleteCallback = null;
-let onSequenceCompleteCallback = null;
-
-/*
-==================================================
-FUNCIÓN PÚBLICA PRINCIPAL
-==================================================
-*/
-
-/*
-------------------------------------------
-startScheduler()
-------------------------------------------
-
-Inicia el scheduler en modo pruebas.
-
-Solo muestra eventos en el logger.
-
-------------------------------------------
-*/
-
-function startScheduler({
-    sequence: seq,
-    bpm: bpmValue,
-    callbacks = {}
-}) {
-
-    // Verificar que todo está listo
-    if (isRunning) {
-        logInfo("⚠️ El scheduler ya está en marcha");
+    if (schedulerRunning) {
         return;
     }
 
-    if (!seq || seq.length === 0) {
-        logError("❌ No hay secuencia para reproducir");
+    const runtime = window.runtimeConfig;
+
+    if (!runtime) {
         return;
     }
 
-    // Guardar configuración
-    sequence = seq;
-    totalSteps = seq.length;
-    bpm = bpmValue;
-    onStepCallback = callbacks.onStep || null;
-    onLapCompleteCallback = callbacks.onLapComplete || null;
-    onSequenceCompleteCallback = callbacks.onSequenceComplete || null;
+    schedulerRunning = true;
 
-    // Calcular intervalo entre pasos
-    calculateInterval();
+    schedulerStep = 0;
 
-    // Inicializar estado
-    isRunning = true;
-    startTime = Date.now(); // Usamos Date.now() en lugar de AudioContext
-    currentStepIndex = 0;
-    lapCount = 0;
-    stats = {
-        stepsScheduled: 0,
-        stepsExecuted: 0,
-        lapsCompleted: 0
-    };
+    const bpm =
+        runtime.config.bpm.default;
 
-    logSection("▶️ SCHEDULER INICIADO (MODO PRUEBAS)");
-    logOk(`✅ Scheduler en marcha`);
-    logInfo(`   BPM: ${bpm}`);
-    logInfo(`   Intervalo entre pasos: ${intervalMs.toFixed(2)}ms`);
-    logInfo(`   Total de pasos: ${totalSteps}`);
-    logInfo(`   Inicio: ${new Date().toLocaleTimeString()}`);
-    logInfo(`---`);
-    logInfo(`⏳ Ejecutando pasos...`);
-    logInfo(`---`);
+    /*
+    Duración de un pulso
+    */
 
-    // Ejecutar el primer paso inmediatamente
-    executeNextStep();
+    const beatDuration =
+        60000 / bpm;
 
-    // Iniciar el loop
-    timerId = setInterval(
-        executeNextStep,
-        intervalMs
+    /*
+    Duración de una subdivisión
+    */
+
+    const stepDuration =
+        beatDuration /
+        runtime.compas.subdivision_por_pulso;
+
+    logSection("SCHEDULER");
+
+    logInfo(
+        `BPM: ${bpm}`
+    );
+
+    logInfo(
+        `Paso cada ${stepDuration.toFixed(2)} ms`
+    );
+
+    schedulerTimer = setInterval(
+
+        schedulerTick,
+
+        stepDuration
+
     );
 
 }
 
 /*
-------------------------------------------
-stopScheduler()
-------------------------------------------
-
-Detiene el scheduler.
-
-------------------------------------------
+==================================================
+DETENER
+==================================================
 */
 
 function stopScheduler() {
 
-    if (!isRunning) {
-        logInfo("⚠️ El scheduler ya está detenido");
-        return;
-    }
+    schedulerRunning = false;
 
-    isRunning = false;
+    clearInterval(
+        schedulerTimer
+    );
 
-    // Cancelar el loop
-    if (timerId) {
-        clearInterval(timerId);
-        timerId = null;
-    }
+    schedulerTimer = null;
 
-    logSection("⏹️ SCHEDULER DETENIDO");
-    logInfo(`   Pasos ejecutados: ${stats.stepsExecuted}`);
-    logInfo(`   Vueltas completadas: ${stats.lapsCompleted}`);
-    logInfo(`   Tiempo total: ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
+    logInfo(
+        "Scheduler detenido"
+    );
 
-}
-
-/*
-------------------------------------------
-isSchedulerRunning()
-------------------------------------------
-
-Devuelve true si el scheduler está en marcha.
-
-------------------------------------------
-*/
-
-function isSchedulerRunning() {
-    return isRunning;
 }
 
 /*
 ==================================================
-FUNCIONES PRIVADAS
+TICK
 ==================================================
 */
 
-/*
-------------------------------------------
-calculateInterval()
-------------------------------------------
+function schedulerTick() {
 
-Calcula el tiempo entre pasos según BPM y compás.
+    const runtime =
+        window.runtimeConfig;
 
-Para 4/4 con 8 subdivisiones:
-(60 / BPM) / (8 / 4) = (60/120) / 2 = 0.25s = 250ms
+    const sequence =
+        runtime.sequenceResolved;
 
-------------------------------------------
-*/
+    const step =
+        sequence[schedulerStep];
 
-function calculateInterval() {
+    /*
+    LOGGER
+    */
 
-    // Detectar compás según número de subdivisiones
-    let pulsesPerMeasure = 4; // Default: 4/4
+    logInfo(
+        `Tick -> paso ${step.step}`
+    );
 
-    if (totalSteps === 24) {
-        // Bulerías, Alegrías (12/8)
-        pulsesPerMeasure = 12;
-    } else if (totalSteps === 16) {
-        pulsesPerMeasure = 4;
-    } else if (totalSteps === 12) {
-        pulsesPerMeasure = 4;
-    }
-    // Para 8 subdivisiones (rumba, tangos): pulsesPerMeasure = 4
+    /*
+    CANVAS
+    */
 
-    const secondsPerBeat = 60 / bpm;
-    const subdivisionsPerBeat = totalSteps / pulsesPerMeasure;
-    intervalMs = (secondsPerBeat / subdivisionsPerBeat) * 1000;
+    setCurrentStep(
+        step.step
+    );
 
-}
+    /*
+    AQUÍ IRÁ EL AUDIO
 
-/*
-------------------------------------------
-executeNextStep()
-------------------------------------------
+    audio.schedule(step);
 
-Ejecuta el siguiente paso de la secuencia.
+    */
 
-Muestra en el logger los eventos que se
-enviarían al canvas y al audio.
+    schedulerStep++;
 
-------------------------------------------
-*/
+    if (
+        schedulerStep >=
+        sequence.length
+    ) {
 
-function executeNextStep() {
+        schedulerStep = 0;
 
-    if (!isRunning) {
-        return;
-    }
+        logInfo(
+            "Fin de compás"
+        );
 
-    // Si hemos llegado al final de la secuencia
-    if (currentStepIndex >= totalSteps) {
-
-        // Completar vuelta
-        lapCount++;
-        stats.lapsCompleted++;
-
-        // Notificar al canvas (si existe callback)
-        if (onLapCompleteCallback) {
-            onLapCompleteCallback(lapCount);
-        }
-
-        // Reiniciar al principio
-        currentStepIndex = 0;
-
-        logSection(`🔄 VUELTA ${lapCount + 1}`);
-        logOk(`✅ Vuelta ${lapCount} completada`);
-        logInfo(`   Pasos ejecutados: ${totalSteps}`);
-        logInfo(`   Tiempo total: ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
-        logInfo(`   ---`);
-        logInfo(`   Iniciando vuelta ${lapCount + 1}...`);
-        logInfo(`---`);
-
-        // Si la secuencia está vacía, detener
-        if (totalSteps === 0) {
-            stopScheduler();
-            return;
-        }
-
-    }
-
-    // Obtener el paso actual
-    const stepData = sequence[currentStepIndex];
-    const stepIndex = currentStepIndex;
-    const lap = lapCount + 1;
-
-    // Incrementar contador
-    stats.stepsExecuted++;
-
-    // MOSTRAR EN EL LOGGER
-    logStep(stepData, stepIndex, lap);
-
-    // Notificar al canvas (si existe callback)
-    if (onStepCallback) {
-        onStepCallback(stepIndex, stepData, lap);
-    }
-
-    // Notificar al audio (si existe callback)
-    if (onSequenceCompleteCallback) {
-        onSequenceCompleteCallback(stepData, stepIndex, lap);
-    }
-
-    // Avanzar al siguiente paso
-    currentStepIndex++;
-
-}
-
-/*
-------------------------------------------
-logStep()
-------------------------------------------
-
-Muestra en el logger toda la información
-del paso que se está ejecutando.
-
-Aquí se ven los eventos que se enviarían
-al canvas y al audio.
-
-------------------------------------------
-*/
-
-function logStep(
-    stepData,
-    stepIndex,
-    lap
-) {
-
-    // Calcular tiempo desde el inicio
-    const elapsedMs = Date.now() - startTime;
-    const elapsedSeconds = elapsedMs / 1000;
-    const timeStr = formatTime(elapsedSeconds);
-
-    // Construir mensaje
-    let message = `⏰ [${timeStr}]`;
-
-    // Información del paso
-    message += ` Paso ${stepIndex + 1}/${totalSteps}`;
-    message += ` | Vuelta ${lap}`;
-
-    // Métrica
-    if (stepData.metric === "K") {
-        message += ` | 🔴 FUERTE`;
-    } else {
-        message += ` | ⚪ débil`;
-    }
-
-    // Etiqueta
-    if (stepData.label) {
-        message += ` | Etiqueta: "${stepData.label}"`;
-    }
-
-    // Eventos (lo que se enviaría al audio y al canvas)
-    if (stepData.events && stepData.events.length > 0) {
-
-        const eventStrings = stepData.events.map(event => {
-
-            // Tipo de evento
-            let typeStr = '';
-            if (event.type === 'G') typeStr = '⚪ GRAVE';
-            else if (event.type === 'C') typeStr = '❌ AGUDO';
-            else if (event.type === 'S') typeStr = '● SILENCIO';
-            else typeStr = `? ${event.type}`;
-
-            // Acento
-            let accentStr = '';
-            if (event.accent === 'H') accentStr = '🔴 FUERTE';
-            else if (event.accent === 'M') accentStr = '🟠 MEDIO';
-            else if (event.accent === 'L') accentStr = '⚪ LIGERO';
-            else accentStr = `? ${event.accent}`;
-
-            return `${typeStr} (${accentStr})`;
-
-        });
-
-        message += ` | Eventos: ${eventStrings.join(' | ')}`;
-
-    } else {
-
-        message += ` | Eventos: (ninguno)`;
-
-    }
-
-    // Mostrar en el logger
-    logInfo(message);
-
-}
-
-/*
-------------------------------------------
-formatTime()
-------------------------------------------
-
-Formatea un tiempo en segundos a:
-- "1m 23s 456ms" (si hay minutos)
-- "23s 456ms" (si solo hay segundos)
-
-------------------------------------------
-*/
-
-function formatTime(seconds) {
-
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    const ms = Math.floor((seconds % 1) * 1000);
-
-    if (mins > 0) {
-        return `${mins}m ${secs}s ${String(ms).padStart(3, '0')}ms`;
-    } else {
-        return `${secs}s ${String(ms).padStart(3, '0')}ms`;
     }
 
 }
 
 /*
 ==================================================
-EXPORTACIÓN DEL MÓDULO
+EXPORTAR
 ==================================================
 */
 
-// Exponer solo lo que otros módulos necesitan
-window.startScheduler = startScheduler;
-window.stopScheduler = stopScheduler;
-window.isSchedulerRunning = isSchedulerRunning;
+window.startScheduler =
+    startScheduler;
+
+window.stopScheduler =
+    stopScheduler;
 
 /*
 ==================================================
-MENSAJE DE CARGA
+ARRANQUE AUTOMÁTICO
+
+Temporal.
+
+Cuando exista el botón START/STOP
+simplemente eliminaremos este bloque.
+
 ==================================================
 */
 
-logInfo("📦 Scheduler cargado (modo pruebas - sin AudioContext)");
-logInfo("   startScheduler() - inicia el reloj");
-logInfo("   stopScheduler()  - detiene el reloj");
+function waitForRuntimeScheduler() {
+
+    if (
+        window.runtimeConfig &&
+        window.runtimeConfig.sequenceResolved
+    ) {
+
+        startScheduler();
+
+    }
+
+    else {
+
+        setTimeout(
+
+            waitForRuntimeScheduler,
+
+            100
+
+        );
+
+    }
+
+}
+
+waitForRuntimeScheduler();
