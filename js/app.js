@@ -286,3 +286,4 @@ async function loadJson(path) {
 }
 
 // ✅ FIN DEL ARCHIVO - NADA MÁS DESPUÉS DE AQUÍ
+}
