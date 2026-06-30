@@ -179,41 +179,4 @@ window.startScheduler =
 window.stopScheduler =
     stopScheduler;
 
-/*
-==================================================
-ARRANQUE AUTOMÁTICO
 
-Temporal.
-
-Cuando exista el botón START/STOP
-simplemente eliminaremos este bloque.
-
-==================================================
-*/
-
-function waitForRuntimeScheduler() {
-
-    if (
-        window.runtimeConfig &&
-        window.runtimeConfig.sequenceResolved
-    ) {
-
-        startScheduler();
-
-    }
-
-    else {
-
-        setTimeout(
-
-            waitForRuntimeScheduler,
-
-            100
-
-        );
-
-    }
-
-}
-
-waitForRuntimeScheduler();
