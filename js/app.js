@@ -196,201 +196,65 @@ async function init() {
             compas.nombre
         );
 
-        /*
-        ==========================================
-        CONSTRUIR RUNTIME
+     /*
+==========================================
+CREAR RUNTIME
+==========================================
+*/
 
-        Desde este momento el resto del
-        proyecto ya no vuelve a leer JSON.
+window.runtimeConfig = {
 
-        Todos los módulos trabajarán
-        únicamente con runtimeConfig.
+    family,
 
-        ==========================================
-        */
+    familyConfig,
 
-        window.runtimeConfig = {
+    config,
 
-            family,
+    preset,
 
-            familyConfig,
+    compas
 
-            config,
+};
 
-            preset,
+/*
+==========================================
+GENERAR SECUENCIA
+==========================================
+*/
 
-            compas
+window.runtimeConfig.sequenceResolved =
+    buildSequence(window.runtimeConfig);
 
-        };
+/*
+==========================================
+DIBUJO INICIAL
 
-        /*
-        ==========================================
-        GENERAR SECUENCIA
+Se dibuja el compás completo pero el
+metrónomo permanece parado.
 
-        El secuenciador transforma el preset
-        en una lista completa de pasos.
+El scheduler NO se inicia aquí.
 
-        El resultado ya no depende de JSON.
+Será controls.js quien decida cuándo
+arrancar o detener el reloj.
 
-        El scheduler utilizará esta secuencia
-        continuamente.
+==========================================
+*/
 
-        ==========================================
-        */
+drawCompas();
 
-        logSection("SECUENCIA");
+/*
+==========================================
+RUNTIME
+==========================================
+*/
 
-        window.runtimeConfig.sequenceResolved =
-            buildSequence(
-                window.runtimeConfig
-            );
+logSection("RUNTIME");
 
-        /*
-        ==========================================
-        MOSTRAR SECUENCIA
+logOk("Runtime creado");
 
-        Solo para depuración.
+console.log(window.runtimeConfig);
 
-        Cuando el proyecto esté terminado
-        este bloque podrá eliminarse sin que
-        afecte al funcionamiento.
-
-        ==========================================
-        */
-
-        window.runtimeConfig.sequenceResolved.forEach(
-
-            (step) => {
-
-                logInfo("--------------------------------");
-
-                logInfo(
-                    `Paso: ${step.step}`
-                );
-
-                logInfo(
-                    `Etiqueta: ${step.label ?? "-"}`
-                );
-
-                logInfo(
-                    `Métrica: ${step.metric}`
-                );
-
-                if (step.events.length === 0) {
-
-                    logInfo(
-                        "Eventos: ninguno"
-                    );
-
-                }
-
-                else {
-
-                    logInfo(
-                        "Eventos:"
-                    );
-
-                    step.events.forEach(
-
-                        (event) => {
-
-                            logInfo(
-
-                                `Tipo: ${event.type}   Acento: ${event.accent}`
-
-                            );
-
-                        }
-
-                    );
-
-                }
-
-            }
-
-        );
-
-        logOk(
-            "Secuencia generada"
-        );
-
-        /*
-        ==========================================
-        DIBUJO INICIAL
-
-        El canvas únicamente representa el
-        estado actual.
-
-        Más adelante será el scheduler quien
-        lo actualice continuamente.
-
-        ==========================================
-        */
-
-        drawCompas();
-
-        /*
-        ==========================================
-        ARRANCAR EL SCHEDULER
-
-        A partir de aquí el control deja de
-        pertenecer a app.js.
-
-        app.js termina su trabajo.
-
-        El scheduler será el dueño del reloj
-        del metrónomo.
-
-        ==========================================
-        */
-
-        logSection("▶️ INICIANDO SCHEDULER");
-
-        const bpm = window.runtimeConfig.config.bpm.default || 120;
-
-        startScheduler({
-            sequence: window.runtimeConfig.sequenceResolved,
-            bpm: bpm,
-            callbacks: {
-                onStep: function(stepIndex, stepData, lap) {
-                    // Aquí irá Canvas.setCurrentStep(stepIndex)
-                    // Por ahora, solo logger
-                },
-                onLapComplete: function(lapCount) {
-                    // Aquí irá actualizar el contador de vueltas
-                }
-            }
-        });
-
-        logOk("✅ Scheduler iniciado automáticamente");
-
-        logSection("RUNTIME");
-
-        logOk(
-            "Runtime creado"
-        );
-
-        console.log(
-            window.runtimeConfig
-        );
-
-        logOk(
-            "Fase de carga completada"
-        );
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-        logError(
-            error.message
-        );
-
-    }
-
-}
+logOk("Fase de carga completada");  
 
 /*
 ==================================================
