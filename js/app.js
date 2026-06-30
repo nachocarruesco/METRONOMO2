@@ -3,23 +3,27 @@
 APP.JS
 ==================================================
 
-Este módulo únicamente prepara el motor.
+Responsabilidad:
 
-Responsabilidades:
-
-1. Leer los parámetros de la URL.
-2. Cargar todos los JSON.
-3. Construir runtimeConfig.
-4. Pedir al secuenciador la secuencia.
-5. Arrancar el scheduler.
+- Leer la URL.
+- Cargar todos los JSON.
+- Construir runtimeConfig.
+- Pedir la secuencia al sequencer.
+- Dibujar el estado inicial.
 
 NO reproduce audio.
 
-NO dibuja.
+NO lleva el tiempo.
 
-NO conoce tiempos.
+NO conoce el scheduler.
 
-Toda la lógica temporal pertenece al scheduler.
+Cuando termina este archivo existe un único
+objeto global:
+
+window.runtimeConfig
+
+A partir de ese momento el resto de módulos
+trabajan únicamente con él.
 
 ==================================================
 */
@@ -33,17 +37,15 @@ document.addEventListener(
 ==================================================
 CONFIGURACIÓN GLOBAL
 ==================================================
-
-Todos los módulos accederán a este objeto.
-
-scheduler.js
-audio.js
-canvas.js
-
-==================================================
 */
 
 window.runtimeConfig = {};
+
+/*
+==================================================
+INICIALIZACIÓN
+==================================================
+*/
 
 async function init() {
 
@@ -55,7 +57,7 @@ async function init() {
 
         /*
         ==========================================
-        PARÁMETROS URL
+        LEER URL
         ==========================================
         */
 
@@ -90,13 +92,8 @@ async function init() {
 
         }
 
-        logOk(
-            `Familia: ${family}`
-        );
-
-        logOk(
-            `Preset: ${presetName}`
-        );
+        logOk(`Familia: ${family}`);
+        logOk(`Preset: ${presetName}`);
 
         /*
         ==========================================
@@ -155,9 +152,7 @@ async function init() {
 
         const preset =
             await loadJson(
-
                 `${familyConfig.presets}${presetName}.json`
-
             );
 
         logOk(
@@ -196,74 +191,118 @@ async function init() {
             compas.nombre
         );
 
-     /*
-==========================================
-CREAR RUNTIME
-==========================================
-*/
+        /*
+        ==========================================
+        CREAR RUNTIME
+        ==========================================
+        */
 
-window.runtimeConfig = {
+        window.runtimeConfig = {
 
-    family,
+            family,
 
-    familyConfig,
+            familyConfig,
 
-    config,
+            config,
 
-    preset,
+            preset,
 
-    compas
+            compas
 
-};
+        };
 
-/*
-==========================================
-GENERAR SECUENCIA
-==========================================
-*/
+            /*
+        ==========================================
+        GENERAR SECUENCIA
+        ==========================================
 
-window.runtimeConfig.sequenceResolved =
-    buildSequence(window.runtimeConfig);
+        A partir del runtime, el secuenciador
+        construye la representación completa del
+        compás.
 
-/*
-==========================================
-DIBUJO INICIAL
+        Cada paso contendrá:
 
-Se dibuja el compás completo pero el
-metrónomo permanece parado.
+        - número de step
+        - etiqueta visual
+        - métrica (K/L)
+        - eventos musicales
 
-El scheduler NO se inicia aquí.
+        ==========================================
+        */
 
-Será controls.js quien decida cuándo
-arrancar o detener el reloj.
+        window.runtimeConfig.sequenceResolved =
+            buildSequence(
+                window.runtimeConfig
+            );
 
-==========================================
-*/
+        /*
+        ==========================================
+        DIBUJO INICIAL
+        ==========================================
 
-drawCompas();
+        El canvas dibuja el compás completo.
 
-/*
-==========================================
-RUNTIME
-==========================================
-*/
+        El metrónomo permanece PARADO.
 
-logSection("RUNTIME");
+        El scheduler todavía NO se inicia.
 
-logOk("Runtime creado");
+        Será controls.js quien llame a:
 
-console.log(window.runtimeConfig);
+            startScheduler()
 
-logOk("Fase de carga completada");  
+        cuando el usuario pulse START.
+
+        ==========================================
+        */
+
+        drawCompas();
+
+        /*
+        ==========================================
+        RUNTIME
+        ==========================================
+        */
+
+        logSection("RUNTIME");
+
+        logOk(
+            "Runtime creado"
+        );
+
+        console.log(
+            window.runtimeConfig
+        );
+
+        logOk(
+            "Fase de carga completada"
+
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+        logError(
+            error.message
+        );
+
+    }
+
+}
 
 /*
 ==================================================
 CARGADOR GENÉRICO DE JSON
 ==================================================
 
-Lee un archivo JSON y devuelve un objeto.
+Todos los módulos utilizan esta función para
+leer archivos JSON.
 
-Todos los módulos utilizan esta función.
+Devuelve un objeto JavaScript.
 
 ==================================================
 */
@@ -283,7 +322,4 @@ async function loadJson(path) {
 
     return await response.json();
 
-}
-
-// ✅ FIN DEL ARCHIVO - NADA MÁS DESPUÉS DE AQUÍ
 }
