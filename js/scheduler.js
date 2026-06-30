@@ -5,28 +5,38 @@ SCHEDULER
 
 Responsabilidad:
 
-Es el reloj del metrónomo.
+Mantener un reloj.
 
-No sabe cómo se dibuja.
+Consultar al secuenciador.
 
-No sabe cómo suena.
+Asignar un instante absoluto a cada paso.
 
-Únicamente decide CUÁNDO ocurre cada paso
-y envía ese paso a los distintos módulos.
+Enviar el evento a todos los módulos.
 
-En el futuro enviará los eventos a:
+NO reproduce audio.
 
-- audio.js
-- canvas.js
+NO dibuja.
 
 ==================================================
 */
 
 let schedulerTimer = null;
 
-let schedulerStep = 0;
+let currentStep = 0;
 
-let schedulerRunning = false;
+let nextEventTime = 0;
+
+let lap = 0;
+
+/*
+==================================================
+CONFIGURACIÓN
+==================================================
+*/
+
+const LOOK_AHEAD = 0.10;      // segundos
+
+const TICK = 25;              // ms
 
 /*
 ==================================================
@@ -36,55 +46,41 @@ INICIAR
 
 function startScheduler() {
 
-    if (schedulerRunning) {
+    if (schedulerTimer) {
         return;
     }
-
-    const runtime = window.runtimeConfig;
-
-    if (!runtime) {
-        return;
-    }
-
-    schedulerRunning = true;
-
-    schedulerStep = 0;
 
     const bpm =
-        runtime.config.bpm.default;
+        window.runtimeConfig.config.bpm.default;
 
-    /*
-    Duración de un pulso
-    */
+    const subdivisionPerBeat =
+        window.runtimeConfig.compas.subdivision_por_pulso;
 
-    const beatDuration =
-        60000 / bpm;
+    const secondsPerStep =
+        60 / bpm / subdivisionPerBeat;
 
-    /*
-    Duración de una subdivisión
-    */
+    schedulerState.secondsPerStep =
+        secondsPerStep;
 
-    const stepDuration =
-        beatDuration /
-        runtime.compas.subdivision_por_pulso;
+    schedulerState.audioTime =
+        performance.now() / 1000;
+
+    nextEventTime =
+        schedulerState.audioTime;
+
+    currentStep = 0;
+
+    lap = 0;
 
     logSection("SCHEDULER");
 
-    logInfo(
-        `BPM: ${bpm}`
-    );
+    logOk("Scheduler iniciado");
 
-    logInfo(
-        `Paso cada ${stepDuration.toFixed(2)} ms`
-    );
-
-    schedulerTimer = setInterval(
-
-        schedulerTick,
-
-        stepDuration
-
-    );
+    schedulerTimer =
+        setInterval(
+            schedulerTick,
+            TICK
+        );
 
 }
 
@@ -96,7 +92,9 @@ DETENER
 
 function stopScheduler() {
 
-    schedulerRunning = false;
+    if (!schedulerTimer) {
+        return;
+    }
 
     clearInterval(
         schedulerTimer
@@ -104,7 +102,7 @@ function stopScheduler() {
 
     schedulerTimer = null;
 
-    logInfo(
+    logOk(
         "Scheduler detenido"
     );
 
@@ -118,54 +116,142 @@ TICK
 
 function schedulerTick() {
 
-    const runtime =
-        window.runtimeConfig;
+    const now =
+        performance.now() / 1000;
 
-    const sequence =
-        runtime.sequenceResolved;
+    while (
 
-    const step =
-        sequence[schedulerStep];
+        nextEventTime <
+        now + LOOK_AHEAD
 
-    /*
-    LOGGER
-    */
-
-    logInfo(
-        `Tick -> paso ${step.step}`
-    );
-
-    /*
-    CANVAS
-    */
-
-    setCurrentStep(
-        step.step
-    );
-
-    /*
-    AQUÍ IRÁ EL AUDIO
-
-    audio.schedule(step);
-
-    */
-
-    schedulerStep++;
-
-    if (
-        schedulerStep >=
-        sequence.length
     ) {
 
-        schedulerStep = 0;
+        dispatchStep(
 
-        logInfo(
-            "Fin de compás"
+            currentStep,
+
+            nextEventTime,
+
+            lap
+
         );
+
+        nextEventTime +=
+            schedulerState.secondsPerStep;
+
+        currentStep++;
+
+        if (
+
+            currentStep >=
+
+            window.runtimeConfig.sequenceResolved.length
+
+        ) {
+
+            currentStep = 0;
+
+            lap++;
+
+        }
 
     }
 
 }
+
+/*
+==================================================
+ENVIAR EVENTO
+==================================================
+*/
+
+function dispatchStep(
+
+    stepIndex,
+
+    eventTime,
+
+    lap
+
+) {
+
+    const step =
+
+        window.runtimeConfig
+            .sequenceResolved[stepIndex];
+
+    /*
+    Logger
+    */
+
+    logInfo(
+
+        `[${eventTime.toFixed(3)}] ` +
+
+        `Paso ${step.step}` +
+
+        ` (${step.label ?? "-"})`
+
+    );
+
+    /*
+    Canvas
+    */
+
+    if (window.setCurrentStep) {
+
+        const delay =
+
+            Math.max(
+
+                0,
+
+                eventTime * 1000 -
+
+                performance.now()
+
+            );
+
+        setTimeout(
+
+            () => {
+
+                window.setCurrentStep(
+                    stepIndex
+                );
+
+            },
+
+            delay
+
+        );
+
+    }
+
+    /*
+    Audio
+
+    Aquí irá:
+
+    window.audioEngine.schedule(step,eventTime);
+
+    */
+
+}
+
+/*
+==================================================
+ESTADO
+==================================================
+*/
+
+const schedulerState = {
+
+    secondsPerStep: 0,
+
+    audioTime: 0
+
+};
 
 /*
 ==================================================
@@ -178,5 +264,3 @@ window.startScheduler =
 
 window.stopScheduler =
     stopScheduler;
-
-
