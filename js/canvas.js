@@ -1,15 +1,20 @@
 /*
 ==================================================
 CANVAS.JS
-PARTE 1
 ==================================================
 
 Responsabilidad:
 
-- Dibujar el compás.
-- NO conoce BPM.
-- NO conoce tiempos.
-- NO reproduce audio.
+Dibujar el estado visual del metrónomo.
+
+NO conoce BPM.
+
+NO conoce tiempos.
+
+NO reproduce audio.
+
+Únicamente representa la información que recibe
+desde runtimeConfig y desde el scheduler.
 
 El scheduler únicamente llamará a:
 
@@ -19,9 +24,11 @@ setLap(...)
 ==================================================
 */
 
-/*=================================================
+/*
+==================================================
 CANVAS
-=================================================*/
+==================================================
+*/
 
 const canvas =
     document.getElementById("canvas");
@@ -29,9 +36,11 @@ const canvas =
 const ctx =
     canvas.getContext("2d");
 
-/*=================================================
+/*
+==================================================
 GEOMETRÍA
-=================================================*/
+==================================================
+*/
 
 const cx =
     canvas.width / 2;
@@ -41,15 +50,49 @@ const cy =
 
 const OUTER_RADIUS = 220;
 
-const STEP_RADIUS = 175;
+const STEP_RADIUS = 185;
 
 const LABEL_RADIUS = 255;
 
 const CENTER_RADIUS = 42;
 
-/*=================================================
+/*
+==================================================
+COLORES
+==================================================
+*/
+
+const COLORS = {
+
+    background: "#111111",
+
+    circle: "#666666",
+
+    tick: "#666666",
+
+    label: "#ffffff",
+
+    active: "#00ff66",
+
+    grave: "#ffffff",
+
+    agudo: "#ffffff",
+
+    claqueta: "#00ccff",
+
+    fantasma: "#888888",
+
+    lap: "#00ff66",
+
+    lastLap: "#ff4444"
+
+};
+
+/*
+==================================================
 ESTADO
-=================================================*/
+==================================================
+*/
 
 let currentStep = -1;
 
@@ -57,39 +100,16 @@ let currentLap = 1;
 
 let totalLaps = 1;
 
-/*=================================================
-COLORES
-=================================================*/
-
-const COLORS = {
-
-    background: "#000000",
-
-    circle: "#666666",
-
-    ticks: "#777777",
-
-    labels: "#ffffff",
-
-    inactive: "#666666",
-
-    active: "#00ff88",
-
-    grave: "#ffffff",
-
-    agudo: "#ffffff",
-
-    lap: "#00ff88",
-
-    lastLap: "#ff3333"
-
-};
-
-/*=================================================
+/*
+==================================================
 ÁNGULO DE UN STEP
-=================================================*/
+==================================================
+*/
 
-function getStepAngle(step, totalSteps) {
+function getStepAngle(
+    step,
+    totalSteps
+) {
 
     return (
         -Math.PI / 2 +
@@ -100,9 +120,14 @@ function getStepAngle(step, totalSteps) {
 
 }
 
-/*=================================================
-REDIBUJAR TODO
-=================================================*/
+/*
+==================================================
+FUNCIÓN PRINCIPAL
+
+Redibuja TODO.
+
+==================================================
+*/
 
 function drawCompas() {
 
@@ -110,14 +135,10 @@ function drawCompas() {
         !window.runtimeConfig ||
         !window.runtimeConfig.sequenceResolved
     ) {
+
         return;
+
     }
-
-    const sequence =
-        window.runtimeConfig.sequenceResolved;
-
-    const totalSteps =
-        sequence.length;
 
     ctx.clearRect(
         0,
@@ -128,87 +149,115 @@ function drawCompas() {
 
     drawOuterCircle();
 
-    drawTicks(totalSteps);
+    drawTicks();
 
-    drawLabels(totalSteps);
+    drawLabels();
 
-    drawEvents(sequence);
+    drawEvents();
 
     drawCenterCircle();
 
+    drawNeedle();
+
 }
 
-/*=================================================
+/*
+==================================================
 CÍRCULO EXTERIOR
-=================================================*/
+==================================================
+*/
 
 function drawOuterCircle() {
 
     ctx.beginPath();
 
     ctx.arc(
+
         cx,
         cy,
+
         OUTER_RADIUS,
+
         0,
         Math.PI * 2
-    );
 
-    ctx.lineWidth = 4;
+    );
 
     ctx.strokeStyle =
         COLORS.circle;
+
+    ctx.lineWidth = 3;
 
     ctx.stroke();
 
 }
 
-/*=================================================
+/*
+==================================================
 MUESCAS
-=================================================*/
 
-function drawTicks(totalSteps) {
+Una por subdivisión.
+
+==================================================
+*/
+
+function drawTicks() {
+
+    const totalSteps =
+        window.runtimeConfig
+            .sequenceResolved
+            .length;
 
     for (
-        let i = 0;
-        i < totalSteps;
-        i++
+
+        let step = 0;
+
+        step < totalSteps;
+
+        step++
+
     ) {
 
         const angle =
             getStepAngle(
-                i,
+                step,
                 totalSteps
             );
 
         const x1 =
             cx +
             Math.cos(angle) *
-            (OUTER_RADIUS - 10);
+            (OUTER_RADIUS - 6);
 
         const y1 =
             cy +
             Math.sin(angle) *
-            (OUTER_RADIUS - 10);
+            (OUTER_RADIUS - 6);
 
         const x2 =
             cx +
             Math.cos(angle) *
-            (OUTER_RADIUS + 10);
+            (OUTER_RADIUS + 6);
 
         const y2 =
             cy +
             Math.sin(angle) *
-            (OUTER_RADIUS + 10);
+            (OUTER_RADIUS + 6);
 
         ctx.beginPath();
 
-        ctx.moveTo(x1, y1);
+        ctx.moveTo(
+            x1,
+            y1
+        );
 
-        ctx.lineTo(x2, y2);
+        ctx.lineTo(
+            x2,
+            y2
+        );
 
         ctx.strokeStyle =
-            COLORS.ticks;
+            COLORS.tick;
 
         ctx.lineWidth = 2;
 
@@ -218,16 +267,27 @@ function drawTicks(totalSteps) {
 
 }
 
-/*=================================================
-NUMERACIÓN
-=================================================*/
 
-function drawLabels(totalSteps) {
+/*
+==================================================
+NUMERACIÓN
+
+Se dibujan utilizando las etiquetas del compás.
+
+==================================================
+*/
+
+function drawLabels() {
 
     const labels =
         window.runtimeConfig
             .compas
             .etiquetas_default;
+
+    const totalSteps =
+        window.runtimeConfig
+            .sequenceResolved
+            .length;
 
     labels.forEach(label => {
 
@@ -248,7 +308,7 @@ function drawLabels(totalSteps) {
             LABEL_RADIUS;
 
         ctx.fillStyle =
-            COLORS.labels;
+            COLORS.label;
 
         ctx.font =
             "bold 24px Arial";
@@ -269,64 +329,102 @@ function drawLabels(totalSteps) {
 
 }
 
-/*=================================================
+/*
+==================================================
 EVENTOS
-=================================================*/
 
-function drawEvents(sequence) {
+Cada subdivisión puede contener
+0, 1 o varios eventos.
 
-    sequence.forEach((step, index) => {
+==================================================
+*/
 
-        const angle =
-            getStepAngle(
-                index,
-                sequence.length
-            );
+function drawEvents() {
 
-        const x =
-            cx +
-            Math.cos(angle) *
-            STEP_RADIUS;
+    const sequence =
+        window.runtimeConfig
+            .sequenceResolved;
 
-        const y =
-            cy +
-            Math.sin(angle) *
-            STEP_RADIUS;
+    const totalSteps =
+        sequence.length;
 
-        if (
-            step.events.length === 0
-        ) {
+    sequence.forEach(
 
-            drawEmptyStep(
-                x,
-                y,
-                index === currentStep
-            );
+        (step, index) => {
 
-            return;
+            const angle =
+                getStepAngle(
+                    index,
+                    totalSteps
+                );
 
-        }
+            const x =
+                cx +
+                Math.cos(angle) *
+                STEP_RADIUS;
 
-        step.events.forEach(
-            event => {
+            const y =
+                cy +
+                Math.sin(angle) *
+                STEP_RADIUS;
 
-                drawEvent(
-                    event,
+            if (
+                step.events.length === 0
+            ) {
+
+                drawEmptyStep(
                     x,
                     y,
                     index === currentStep
                 );
 
-            }
-        );
+                return;
 
-    });
+            }
+
+            step.events.forEach(
+
+                (event, eventIndex) => {
+
+                    const offset =
+                        step.events.length === 1
+                        ? { x:0, y:0 }
+                        : {
+
+                            x:
+                                (eventIndex - (step.events.length-1)/2) * 12,
+
+                            y:0
+
+                        };
+
+                    drawEvent(
+
+                        event,
+
+                        x + offset.x,
+
+                        y + offset.y,
+
+                        index === currentStep
+
+                    );
+
+                }
+
+            );
+
+        }
+
+    );
 
 }
 
-/*=================================================
+/*
+==================================================
 PASO VACÍO
-=================================================*/
+==================================================
+*/
 
 function drawEmptyStep(
     x,
@@ -337,25 +435,36 @@ function drawEmptyStep(
     ctx.beginPath();
 
     ctx.arc(
+
         x,
+
         y,
+
         active ? 7 : 5,
+
         0,
+
         Math.PI * 2
+
     );
 
     ctx.fillStyle =
+
         active
-            ? COLORS.active
-            : COLORS.inactive;
+
+        ? COLORS.active
+
+        : "#555555";
 
     ctx.fill();
 
 }
 
-/*=================================================
+/*
+==================================================
 DIBUJAR EVENTO
-=================================================*/
+==================================================
+*/
 
 function drawEvent(
     event,
@@ -366,7 +475,7 @@ function drawEvent(
 
     let size = 10;
 
-    switch (event.accent) {
+    switch(event.accent){
 
         case "H":
             size = 18;
@@ -382,27 +491,51 @@ function drawEvent(
 
     }
 
+    let color =
+        COLORS.grave;
+
+    switch(event.type){
+
+        case "G":
+            color = COLORS.grave;
+            break;
+
+        case "C":
+            color = COLORS.agudo;
+            break;
+
+        case "E":
+            color = COLORS.claqueta;
+            break;
+
+        case "F":
+            color = COLORS.fantasma;
+            break;
+
+    }
+
+    if(active){
+
+        color =
+            COLORS.active;
+
+    }
+
     ctx.strokeStyle =
-        active
-            ? COLORS.active
-            : COLORS.grave;
+        color;
 
     ctx.fillStyle =
-        active
-            ? COLORS.active
-            : COLORS.grave;
+        color;
 
     ctx.lineWidth =
-        active
-            ? 4
-            : 3;
+        active ? 4 : 3;
 
-    switch (event.type) {
+    switch(event.type){
 
         /*
-        ------------------------
+        -----------------------
         GRAVE
-        ------------------------
+        -----------------------
         */
 
         case "G":
@@ -410,11 +543,17 @@ function drawEvent(
             ctx.beginPath();
 
             ctx.arc(
+
                 x,
+
                 y,
+
                 size,
+
                 0,
-                Math.PI * 2
+
+                Math.PI*2
+
             );
 
             ctx.stroke();
@@ -422,9 +561,9 @@ function drawEvent(
             break;
 
         /*
-        ------------------------
+        -----------------------
         AGUDO
-        ------------------------
+        -----------------------
         */
 
         case "C":
@@ -432,23 +571,23 @@ function drawEvent(
             ctx.beginPath();
 
             ctx.moveTo(
-                x - size,
-                y - size
+                x-size,
+                y-size
             );
 
             ctx.lineTo(
-                x + size,
-                y + size
+                x+size,
+                y+size
             );
 
             ctx.moveTo(
-                x + size,
-                y - size
+                x+size,
+                y-size
             );
 
             ctx.lineTo(
-                x - size,
-                y + size
+                x-size,
+                y+size
             );
 
             ctx.stroke();
@@ -456,9 +595,9 @@ function drawEvent(
             break;
 
         /*
-        ------------------------
+        -----------------------
         CLAQUETA
-        ------------------------
+        -----------------------
         */
 
         case "E":
@@ -466,10 +605,15 @@ function drawEvent(
             ctx.beginPath();
 
             ctx.rect(
-                x - size / 2,
-                y - size / 2,
+
+                x-size/2,
+
+                y-size/2,
+
                 size,
+
                 size
+
             );
 
             ctx.stroke();
@@ -477,9 +621,9 @@ function drawEvent(
             break;
 
         /*
-        ------------------------
+        -----------------------
         FANTASMA
-        ------------------------
+        -----------------------
         */
 
         case "F":
@@ -487,11 +631,17 @@ function drawEvent(
             ctx.beginPath();
 
             ctx.arc(
+
                 x,
+
                 y,
-                size / 2,
+
+                size/2,
+
                 0,
-                Math.PI * 2
+
+                Math.PI*2
+
             );
 
             ctx.fill();
@@ -502,20 +652,28 @@ function drawEvent(
 
 }
 
-/*=================================================
+/*
+==================================================
 CÍRCULO CENTRAL
-=================================================*/
+==================================================
+*/
 
 function drawCenterCircle() {
 
     ctx.beginPath();
 
     ctx.arc(
+
         cx,
+
         cy,
+
         CENTER_RADIUS,
+
         0,
+
         Math.PI * 2
+
     );
 
     ctx.fillStyle =
@@ -534,19 +692,24 @@ function drawCenterCircle() {
 
 }
 
-/*=================================================
+/*
+==================================================
 CONTADOR DE VUELTAS
-=================================================*/
+==================================================
+*/
 
 function drawLapCounter() {
 
     ctx.fillStyle =
+
         currentLap === totalLaps
-            ? COLORS.lastLap
-            : COLORS.lap;
+
+        ? COLORS.lastLap
+
+        : COLORS.lap;
 
     ctx.font =
-        "bold 26px Arial";
+        "bold 28px Arial";
 
     ctx.textAlign =
         "center";
@@ -555,25 +718,35 @@ function drawLapCounter() {
         "middle";
 
     ctx.fillText(
+
         currentLap,
+
         cx,
+
         cy
+
     );
 
 }
 
-/*=================================================
+/*
+==================================================
 AGUJA
-=================================================*/
+==================================================
+*/
 
 function drawNeedle() {
 
-    if (currentStep < 0)
+    if(currentStep < 0){
+
         return;
+
+    }
 
     const totalSteps =
         window.runtimeConfig
-            .sequenceResolved.length;
+            .sequenceResolved
+            .length;
 
     const angle =
         getStepAngle(
@@ -584,23 +757,29 @@ function drawNeedle() {
     const x =
         cx +
         Math.cos(angle) *
-        (STEP_RADIUS - 20);
+        (STEP_RADIUS - 25);
 
     const y =
         cy +
         Math.sin(angle) *
-        (STEP_RADIUS - 20);
+        (STEP_RADIUS - 25);
 
     ctx.beginPath();
 
     ctx.moveTo(
+
         cx,
+
         cy
+
     );
 
     ctx.lineTo(
+
         x,
+
         y
+
     );
 
     ctx.strokeStyle =
@@ -612,9 +791,14 @@ function drawNeedle() {
 
 }
 
-/*=================================================
+/*
+==================================================
 ACTUALIZAR STEP
-=================================================*/
+
+Llamado únicamente por scheduler.js
+
+==================================================
+*/
 
 function setCurrentStep(step) {
 
@@ -622,13 +806,16 @@ function setCurrentStep(step) {
 
     drawCompas();
 
-    drawNeedle();
-
 }
 
-/*=================================================
+/*
+==================================================
 ACTUALIZAR VUELTAS
-=================================================*/
+
+Llamado únicamente por scheduler.js
+
+==================================================
+*/
 
 function setLap(
     lap,
@@ -641,31 +828,70 @@ function setLap(
 
     drawCompas();
 
-    drawNeedle();
-
 }
 
-/*=================================================
-CLICK SOBRE EL CANVAS
+/*
+==================================================
+EDICIÓN FUTURA
 
-(Preparado para edición futura)
+Aquí se implementará la edición
+de eventos pulsando sobre un step.
 
-=================================================*/
+Secuencia prevista:
+
+Silencio
+↓
+
+G S
+
+↓
+
+G M
+
+↓
+
+G H
+
+↓
+
+C S
+
+↓
+
+C M
+
+↓
+
+C H
+
+↓
+
+Silencio
+
+==================================================
+*/
 
 canvas.addEventListener(
-    "click",
-    function(event) {
 
-        // Aquí se implementará
-        // la edición de eventos
-        // (G→C→silencio...)
+    "click",
+
+    function(event){
+
+        // Próxima versión.
 
     }
+
 );
 
-/*=================================================
+/*
+==================================================
 EXPORTAR API
-=================================================*/
+
+El resto del programa sólo utilizará
+estas funciones.
+
+==================================================
+*/
 
 window.drawCompas =
     drawCompas;
@@ -676,13 +902,16 @@ window.setCurrentStep =
 window.setLap =
     setLap;
 
-/*=================================================
+/*
+==================================================
 DIBUJO INICIAL
 
-Sólo dibuja.
-
-NO arranca el scheduler.
-
-=================================================*/
+Cuando app.js termina de construir
+runtimeConfig llama una única vez a:
 
 drawCompas();
+
+El scheduler NO arranca aquí.
+
+==================================================
+*/
