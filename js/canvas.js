@@ -1,167 +1,688 @@
 /*
 ==================================================
 CANVAS.JS
+PARTE 1
+==================================================
+
+Responsabilidad:
+
+- Dibujar el compás.
+- NO conoce BPM.
+- NO conoce tiempos.
+- NO reproduce audio.
+
+El scheduler únicamente llamará a:
+
+setCurrentStep(...)
+setLap(...)
+
 ==================================================
 */
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-const cx = canvas.width / 2;
-const cy = canvas.height / 2;
-const radius = 220;
+/*=================================================
+CANVAS
+=================================================*/
 
-let currentStep = 0;
+const canvas =
+    document.getElementById("canvas");
+
+const ctx =
+    canvas.getContext("2d");
+
+/*=================================================
+GEOMETRÍA
+=================================================*/
+
+const cx =
+    canvas.width / 2;
+
+const cy =
+    canvas.height / 2;
+
+const OUTER_RADIUS = 220;
+
+const STEP_RADIUS = 175;
+
+const LABEL_RADIUS = 255;
+
+const CENTER_RADIUS = 42;
+
+/*=================================================
+ESTADO
+=================================================*/
+
+let currentStep = -1;
+
+let currentLap = 1;
+
+let totalLaps = 1;
+
+/*=================================================
+COLORES
+=================================================*/
+
+const COLORS = {
+
+    background: "#000000",
+
+    circle: "#666666",
+
+    ticks: "#777777",
+
+    labels: "#ffffff",
+
+    inactive: "#666666",
+
+    active: "#00ff88",
+
+    grave: "#ffffff",
+
+    agudo: "#ffffff",
+
+    lap: "#00ff88",
+
+    lastLap: "#ff3333"
+
+};
+
+/*=================================================
+ÁNGULO DE UN STEP
+=================================================*/
 
 function getStepAngle(step, totalSteps) {
-    return -Math.PI / 2 + (step * 2 * Math.PI / totalSteps);
+
+    return (
+        -Math.PI / 2 +
+        step *
+        Math.PI * 2 /
+        totalSteps
+    );
+
 }
+
+/*=================================================
+REDIBUJAR TODO
+=================================================*/
 
 function drawCompas() {
-    // ✅ Usar window.runtimeConfig en lugar de runtimeConfig directamente
-    const config = window.runtimeConfig;
-    
-    if (!config || !config.compas) {
-        // console.warn("⏳ runtimeConfig no disponible, esperando...");
+
+    if (
+        !window.runtimeConfig ||
+        !window.runtimeConfig.sequenceResolved
+    ) {
         return;
     }
 
-    if (!config.sequenceResolved || config.sequenceResolved.length === 0) {
-        // console.warn("⏳ sequenceResolved vacío, esperando...");
-        return;
-    }
+    const sequence =
+        window.runtimeConfig.sequenceResolved;
 
-    const totalSteps = config.compas.subdivisiones;
-    const sequence = config.sequenceResolved;
+    const totalSteps =
+        sequence.length;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
 
-    // Círculo exterior
+    drawOuterCircle();
+
+    drawTicks(totalSteps);
+
+    drawLabels(totalSteps);
+
+    drawEvents(sequence);
+
+    drawCenterCircle();
+
+}
+
+/*=================================================
+CÍRCULO EXTERIOR
+=================================================*/
+
+function drawOuterCircle() {
+
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = "#444";
+
+    ctx.arc(
+        cx,
+        cy,
+        OUTER_RADIUS,
+        0,
+        Math.PI * 2
+    );
+
     ctx.lineWidth = 4;
+
+    ctx.strokeStyle =
+        COLORS.circle;
+
     ctx.stroke();
 
-    // Etiquetas
-    const labels = config.compas.etiquetas_default;
-    if (labels) {
-        labels.forEach(label => {
-            const angle = getStepAngle(label.step, totalSteps);
-            const x = cx + Math.cos(angle) * (radius + 40);
-            const y = cy + Math.sin(angle) * (radius + 40);
-            ctx.fillStyle = (currentStep === label.step) ? "#00ff88" : "#ffffff";
-            ctx.font = "bold 24px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(label.texto, x, y);
-        });
-    }
+}
 
-    // Dibujar steps
-    sequence.forEach((stepData, index) => {
-        const angle = getStepAngle(index, totalSteps);
-        const x = cx + Math.cos(angle) * radius;
-        const y = cy + Math.sin(angle) * radius;
-        const isActive = (index === currentStep);
+/*=================================================
+MUESCAS
+=================================================*/
 
-        if (stepData.events && stepData.events.length > 0) {
-            stepData.events.forEach((event, eventIndex) => {
-                const offsetX = stepData.events.length > 1 ? (eventIndex * 10 - 5) : 0;
-                const offsetY = stepData.events.length > 1 ? (eventIndex * 10 - 5) : 0;
-                const eventX = x + offsetX;
-                const eventY = y + offsetY;
+function drawTicks(totalSteps) {
 
-                const eventType = event.type ? event.type.toUpperCase() : '';
-                const eventAccent = event.accent || "M";
+    for (
+        let i = 0;
+        i < totalSteps;
+        i++
+    ) {
 
-                let color = "#ffffff";
-                if (eventAccent === "H") color = "#ffcc00";
-                else if (eventAccent === "M") color = "#ffaa44";
+        const angle =
+            getStepAngle(
+                i,
+                totalSteps
+            );
 
-                if (isActive) color = "#00ff88";
+        const x1 =
+            cx +
+            Math.cos(angle) *
+            (OUTER_RADIUS - 10);
 
-                ctx.strokeStyle = color;
-                ctx.fillStyle = color;
-                ctx.lineWidth = isActive ? 5 : 4;
+        const y1 =
+            cy +
+            Math.sin(angle) *
+            (OUTER_RADIUS - 10);
 
-                if (eventType === "G") {
-                    const graveRadius = isActive ? 20 : 16;
-                    ctx.beginPath();
-                    ctx.arc(eventX, eventY, graveRadius, 0, Math.PI * 2);
-                    ctx.stroke();
-                    if (!isActive) {
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
-                        ctx.fill();
-                    }
-                } else if (eventType === "C") {
-                    const size = isActive ? 16 : 12;
-                    ctx.beginPath();
-                    ctx.moveTo(eventX - size, eventY - size);
-                    ctx.lineTo(eventX + size, eventY + size);
-                    ctx.moveTo(eventX + size, eventY - size);
-                    ctx.lineTo(eventX - size, eventY + size);
-                    ctx.stroke();
-                } else {
-                    ctx.beginPath();
-                    ctx.arc(eventX, eventY, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            });
-        } else {
-            ctx.beginPath();
-            ctx.arc(x, y, isActive ? 10 : 6, 0, Math.PI * 2);
-            ctx.fillStyle = isActive ? "#00ff88" : "#555";
-            ctx.fill();
-        }
-    });
+        const x2 =
+            cx +
+            Math.cos(angle) *
+            (OUTER_RADIUS + 10);
 
-    // Aguja
-    if (currentStep !== undefined) {
-        const needleAngle = getStepAngle(currentStep, totalSteps);
-        const ax = cx + Math.cos(needleAngle) * (radius - 20);
-        const ay = cy + Math.sin(needleAngle) * (radius - 20);
+        const y2 =
+            cy +
+            Math.sin(angle) *
+            (OUTER_RADIUS + 10);
 
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(ax, ay);
-        ctx.strokeStyle = "#00ff88";
-        ctx.lineWidth = 4;
+
+        ctx.moveTo(x1, y1);
+
+        ctx.lineTo(x2, y2);
+
+        ctx.strokeStyle =
+            COLORS.ticks;
+
+        ctx.lineWidth = 2;
+
         ctx.stroke();
 
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-        ctx.fillStyle = "#00ff88";
-        ctx.fill();
     }
+
 }
+
+/*=================================================
+NUMERACIÓN
+=================================================*/
+
+function drawLabels(totalSteps) {
+
+    const labels =
+        window.runtimeConfig
+            .compas
+            .etiquetas_default;
+
+    labels.forEach(label => {
+
+        const angle =
+            getStepAngle(
+                label.step,
+                totalSteps
+            );
+
+        const x =
+            cx +
+            Math.cos(angle) *
+            LABEL_RADIUS;
+
+        const y =
+            cy +
+            Math.sin(angle) *
+            LABEL_RADIUS;
+
+        ctx.fillStyle =
+            COLORS.labels;
+
+        ctx.font =
+            "bold 24px Arial";
+
+        ctx.textAlign =
+            "center";
+
+        ctx.textBaseline =
+            "middle";
+
+        ctx.fillText(
+            label.texto,
+            x,
+            y
+        );
+
+    });
+
+}
+
+/*=================================================
+EVENTOS
+=================================================*/
+
+function drawEvents(sequence) {
+
+    sequence.forEach((step, index) => {
+
+        const angle =
+            getStepAngle(
+                index,
+                sequence.length
+            );
+
+        const x =
+            cx +
+            Math.cos(angle) *
+            STEP_RADIUS;
+
+        const y =
+            cy +
+            Math.sin(angle) *
+            STEP_RADIUS;
+
+        if (
+            step.events.length === 0
+        ) {
+
+            drawEmptyStep(
+                x,
+                y,
+                index === currentStep
+            );
+
+            return;
+
+        }
+
+        step.events.forEach(
+            event => {
+
+                drawEvent(
+                    event,
+                    x,
+                    y,
+                    index === currentStep
+                );
+
+            }
+        );
+
+    });
+
+}
+
+/*=================================================
+PASO VACÍO
+=================================================*/
+
+function drawEmptyStep(
+    x,
+    y,
+    active
+) {
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        active ? 7 : 5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle =
+        active
+            ? COLORS.active
+            : COLORS.inactive;
+
+    ctx.fill();
+
+}
+
+/*=================================================
+DIBUJAR EVENTO
+=================================================*/
+
+function drawEvent(
+    event,
+    x,
+    y,
+    active
+) {
+
+    let size = 10;
+
+    switch (event.accent) {
+
+        case "H":
+            size = 18;
+            break;
+
+        case "M":
+            size = 14;
+            break;
+
+        case "S":
+            size = 10;
+            break;
+
+    }
+
+    ctx.strokeStyle =
+        active
+            ? COLORS.active
+            : COLORS.grave;
+
+    ctx.fillStyle =
+        active
+            ? COLORS.active
+            : COLORS.grave;
+
+    ctx.lineWidth =
+        active
+            ? 4
+            : 3;
+
+    switch (event.type) {
+
+        /*
+        ------------------------
+        GRAVE
+        ------------------------
+        */
+
+        case "G":
+
+            ctx.beginPath();
+
+            ctx.arc(
+                x,
+                y,
+                size,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.stroke();
+
+            break;
+
+        /*
+        ------------------------
+        AGUDO
+        ------------------------
+        */
+
+        case "C":
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                x - size,
+                y - size
+            );
+
+            ctx.lineTo(
+                x + size,
+                y + size
+            );
+
+            ctx.moveTo(
+                x + size,
+                y - size
+            );
+
+            ctx.lineTo(
+                x - size,
+                y + size
+            );
+
+            ctx.stroke();
+
+            break;
+
+        /*
+        ------------------------
+        CLAQUETA
+        ------------------------
+        */
+
+        case "E":
+
+            ctx.beginPath();
+
+            ctx.rect(
+                x - size / 2,
+                y - size / 2,
+                size,
+                size
+            );
+
+            ctx.stroke();
+
+            break;
+
+        /*
+        ------------------------
+        FANTASMA
+        ------------------------
+        */
+
+        case "F":
+
+            ctx.beginPath();
+
+            ctx.arc(
+                x,
+                y,
+                size / 2,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+            break;
+
+    }
+
+}
+
+/*=================================================
+CÍRCULO CENTRAL
+=================================================*/
+
+function drawCenterCircle() {
+
+    ctx.beginPath();
+
+    ctx.arc(
+        cx,
+        cy,
+        CENTER_RADIUS,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle =
+        COLORS.background;
+
+    ctx.fill();
+
+    ctx.strokeStyle =
+        COLORS.circle;
+
+    ctx.lineWidth = 3;
+
+    ctx.stroke();
+
+    drawLapCounter();
+
+}
+
+/*=================================================
+CONTADOR DE VUELTAS
+=================================================*/
+
+function drawLapCounter() {
+
+    ctx.fillStyle =
+        currentLap === totalLaps
+            ? COLORS.lastLap
+            : COLORS.lap;
+
+    ctx.font =
+        "bold 26px Arial";
+
+    ctx.textAlign =
+        "center";
+
+    ctx.textBaseline =
+        "middle";
+
+    ctx.fillText(
+        currentLap,
+        cx,
+        cy
+    );
+
+}
+
+/*=================================================
+AGUJA
+=================================================*/
+
+function drawNeedle() {
+
+    if (currentStep < 0)
+        return;
+
+    const totalSteps =
+        window.runtimeConfig
+            .sequenceResolved.length;
+
+    const angle =
+        getStepAngle(
+            currentStep,
+            totalSteps
+        );
+
+    const x =
+        cx +
+        Math.cos(angle) *
+        (STEP_RADIUS - 20);
+
+    const y =
+        cy +
+        Math.sin(angle) *
+        (STEP_RADIUS - 20);
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        cx,
+        cy
+    );
+
+    ctx.lineTo(
+        x,
+        y
+    );
+
+    ctx.strokeStyle =
+        COLORS.active;
+
+    ctx.lineWidth = 4;
+
+    ctx.stroke();
+
+}
+
+/*=================================================
+ACTUALIZAR STEP
+=================================================*/
 
 function setCurrentStep(step) {
+
     currentStep = step;
+
     drawCompas();
+
+    drawNeedle();
+
 }
 
-window.setCurrentStep = setCurrentStep;
-window.drawCompas = drawCompas;
+/*=================================================
+ACTUALIZAR VUELTAS
+=================================================*/
 
-/*
-==================================================
-ESPERAR A QUE RUNTIMECONFIG EXISTA
-==================================================
-*/
+function setLap(
+    lap,
+    total
+) {
 
-function waitForRuntime() {
-    // ✅ Usar window.runtimeConfig
-    if (window.runtimeConfig && window.runtimeConfig.compas && window.runtimeConfig.sequenceResolved) {
-        drawCompas();
-        console.log("✅ Canvas dibujado correctamente");
-    } else {
-        // console.log("⏳ Esperando runtimeConfig...");
-        setTimeout(waitForRuntime, 100);
+    currentLap = lap;
+
+    totalLaps = total;
+
+    drawCompas();
+
+    drawNeedle();
+
+}
+
+/*=================================================
+CLICK SOBRE EL CANVAS
+
+(Preparado para edición futura)
+
+=================================================*/
+
+canvas.addEventListener(
+    "click",
+    function(event) {
+
+        // Aquí se implementará
+        // la edición de eventos
+        // (G→C→silencio...)
+
     }
-}
+);
 
-if (document.readyState === "complete" || document.readyState === "interactive") {
-    waitForRuntime();
-} else {
-    document.addEventListener("DOMContentLoaded", waitForRuntime);
-}
+/*=================================================
+EXPORTAR API
+=================================================*/
+
+window.drawCompas =
+    drawCompas;
+
+window.setCurrentStep =
+    setCurrentStep;
+
+window.setLap =
+    setLap;
+
+/*=================================================
+DIBUJO INICIAL
+
+Sólo dibuja.
+
+NO arranca el scheduler.
+
+=================================================*/
+
+drawCompas();
