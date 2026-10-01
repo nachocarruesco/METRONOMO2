@@ -101,6 +101,24 @@ window.writeLog = writeLog;
 window.DEBUG = DEBUG;
 
 /*
+    El logger se registra en el disparador.
+
+    Recibe el mismo evento que recibirán Canvas y Audio.
+*/
+function handleEvent(event) {
+
+    logInfo(
+        `[${event.time.toFixed(3)}] ` +
+        `Paso ${event.step}` +
+        ` (${event.label ?? "-"})`
+    );
+
+}
+
+window.disparador.register(handleEvent);
+
+
+/*
 --------------------------------------------------
 INICIALIZACIÓN DEL LOGGER (SOLO ESTO)
 --------------------------------------------------
