@@ -166,77 +166,49 @@ ENVIAR EVENTO
 */
 
 function dispatchStep(
-
     stepIndex,
-
     eventTime,
-
     lap
-
 ) {
-
     const step =
-
         window.runtimeConfig
             .sequenceResolved[stepIndex];
 
-    /*
-    Logger
-    */
-
-    logInfo(
-
-        `[${eventTime.toFixed(3)}] ` +
-
-        `Paso ${step.step}` +
-
-        ` (${step.label ?? "-"})`
-
-    );
 
     /*
-    Canvas
+        EVENTO TEMPORAL
+
+        El scheduler añade al paso la información
+        necesaria para saber CUÁNDO debe ejecutarse.
+
+        El scheduler NO decide qué módulo lo utilizará.
     */
+    const event = {
 
-    if (window.setCurrentStep) {
+        time: eventTime,
 
-        const delay =
+        step: step.step,
 
-            Math.max(
+        lap: lap + 1,
 
-                0,
+        metric: step.metric,
 
-                eventTime * 1000 -
+        label: step.label,
 
-                performance.now()
+        events: structuredClone(
+            step.events
+        )
 
-            );
+    };
 
-        setTimeout(
-
-            () => {
-
-                window.setCurrentStep(
-                    stepIndex
-                );
-
-            },
-
-            delay
-
-        );
-
-    }
 
     /*
-    Audio
+        Entregamos el evento al DISPARADOR.
 
-    Aquí irá:
-
-    window.audioEngine.schedule(step,eventTime);
-
+        A partir de aquí el scheduler deja de saber
+        quién consume el evento.
     */
-
+    window.disparador.dispatch(event);
 }
 
 /*
