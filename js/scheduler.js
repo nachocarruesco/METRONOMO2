@@ -22,7 +22,7 @@ NO dibuja.
 
 let schedulerTimer = null;
 
-let currentStep = 0;
+let schedulerStep = 0;
 
 let nextEventTime = 0;
 
@@ -68,7 +68,7 @@ function startScheduler() {
     nextEventTime =
         schedulerState.audioTime;
 
-    currentStep = 0;
+    schedulerStep = 0;
 
     lap = 0;
 
@@ -128,7 +128,7 @@ function schedulerTick() {
 
         dispatchStep(
 
-            currentStep,
+            schedulerStep,
 
             nextEventTime,
 
@@ -139,17 +139,17 @@ function schedulerTick() {
         nextEventTime +=
             schedulerState.secondsPerStep;
 
-        currentStep++;
+        schedulerStep++;
 
         if (
 
-            currentStep >=
+            schedulerStep >=
 
             window.runtimeConfig.sequenceResolved.length
 
         ) {
 
-            currentStep = 0;
+            schedulerStep = 0;
 
             lap++;
 
