@@ -3,7 +3,8 @@
         "nombre": "Rumbas",
         "presets": "./presets/rumba/",
         "cierres": "./presets/rumba/cierres/",
-        "default": "./config/defaults/default_rumbas.json"
+        "default": "./config/defaults/default_rumbas.json",
+        "claqueta": "./config/defaults/claqueta.json"
     },
 
     "tangos": {
