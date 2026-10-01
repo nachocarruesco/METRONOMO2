@@ -955,4 +955,4 @@ function handleCanvasEvent(event) {
 
 }
 
-window.disparador.register(handleCanvasEvent);
+//window.disparador.register(handleCanvasEvent);
