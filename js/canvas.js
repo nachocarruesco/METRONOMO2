@@ -879,34 +879,7 @@ Silencio
 
     El tiempo ya viene calculado por el scheduler.
 */
-function handleCanvasEvent(event) {
 
-    const delay =
-        Math.max(
-            0,
-            event.time * 1000 -
-            performance.now()
-        );
-
-    setTimeout(
-        () => {
-
-            setCurrentStep(
-                event.step
-            );
-
-            setLap(
-                event.lap,
-                1
-            );
-
-        },
-        delay
-    );
-
-}
-
-window.disparador.register(handleCanvasEvent);
 
 
 
@@ -954,3 +927,32 @@ El scheduler NO arranca aquí.
 
 ==================================================
 */
+
+function handleCanvasEvent(event) {
+
+    const delay =
+        Math.max(
+            0,
+            event.time * 1000 -
+            performance.now()
+        );
+
+    setTimeout(
+        () => {
+
+            setCurrentStep(
+                event.step
+            );
+
+            setLap(
+                event.lap,
+                1
+            );
+
+        },
+        delay
+    );
+
+}
+
+window.disparador.register(handleCanvasEvent);
