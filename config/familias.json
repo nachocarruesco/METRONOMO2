@@ -4,7 +4,7 @@
         "presets": "./presets/rumba/",
         "cierres": "./presets/rumba/cierres/",
         "default": "./config/defaults/default_rumbas.json",
-        "claqueta": "./config/defaults/claqueta.json"
+        "claqueta": "./presets/rumba/claqueta.json"
     },
 
     "tangos": {
