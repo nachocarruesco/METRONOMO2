@@ -1,0 +1,8 @@
+{
+    "name": "Ejercicio Rumba 1",
+    "family": "rumba",
+    "sequence": [
+        {"exercise":"rumba_abierta","laps":3},
+        {"exercise":"cierre_rumba","laps":1}
+    ]
+}
