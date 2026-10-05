@@ -17,6 +17,16 @@ NO reproduce audio.
 
 NO dibuja.
 
+IMPORTANTE:
+
+El scheduler NO calcula las vueltas musicales.
+
+La información de lap ya viene resuelta por
+sequencer.js dentro de sequenceResolved.
+
+El scheduler únicamente recorre sequenceResolved
+y vuelve al principio cuando llega al final.
+
 ==================================================
 */
 
@@ -25,8 +35,6 @@ let schedulerTimer = null;
 let schedulerStep = 0;
 
 let nextEventTime = 0;
-
-let lap = 0;
 
 /*
 ==================================================
@@ -68,9 +76,15 @@ function startScheduler() {
     nextEventTime =
         schedulerState.audioTime;
 
-    schedulerStep = 0;
+    /*
+        Empezamos siempre por el primer paso
+        de sequenceResolved.
 
-    lap = 0;
+        El número de lap NO se guarda aquí.
+
+        Lo proporciona cada paso de la partitura.
+    */
+    schedulerStep = 0;
 
     logSection("SCHEDULER");
 
@@ -130,17 +144,44 @@ function schedulerTick() {
 
             schedulerStep,
 
-            nextEventTime,
-
-            lap
+            nextEventTime
 
         );
 
+        /*
+            El siguiente paso se programa después
+            del intervalo temporal correspondiente
+            a una subdivisión.
+        */
         nextEventTime +=
             schedulerState.secondsPerStep;
 
         schedulerStep++;
 
+        /*
+            Hemos llegado al final de la partitura
+            resuelta.
+
+            Volvemos al principio.
+
+            IMPORTANTE:
+
+            Aquí NO incrementamos ningún lap.
+
+            Cada paso de sequenceResolved ya contiene
+            su propio número de lap.
+
+            Esto permite que:
+
+            - un ejercicio de 4 laps vuelva a
+              comenzar en lap 1 después del lap 4.
+
+            - un ejercicio de 1 lap vuelva a comenzar
+              siempre en lap 1.
+
+            - un ejercicio compuesto conserve la
+              numeración correcta de sus laps.
+        */
         if (
 
             schedulerStep >=
@@ -150,8 +191,6 @@ function schedulerTick() {
         ) {
 
             schedulerStep = 0;
-
-            lap++;
 
         }
 
@@ -167,29 +206,32 @@ ENVIAR EVENTO
 
 function dispatchStep(
     stepIndex,
-    eventTime,
-    lap
+    eventTime
 ) {
+
     const step =
         window.runtimeConfig
             .sequenceResolved[stepIndex];
 
-
     /*
         EVENTO TEMPORAL
 
-        El scheduler añade al paso la información
-        necesaria para saber CUÁNDO debe ejecutarse.
+        El scheduler añade únicamente la información
+        temporal al paso de la partitura.
 
-        El scheduler NO decide qué módulo lo utilizará.
+        El número de lap NO lo calcula el scheduler.
+
+        Lo obtiene directamente del paso resuelto
+        por sequencer.js.
     */
+
     const event = {
 
         time: eventTime,
 
         step: step.step,
 
-        lap: lap + 1,
+        lap: step.lap,
 
         metric: step.metric,
 
@@ -201,14 +243,15 @@ function dispatchStep(
 
     };
 
-
     /*
         Entregamos el evento al DISPARADOR.
 
         A partir de aquí el scheduler deja de saber
         quién consume el evento.
     */
+
     window.disparador.dispatch(event);
+
 }
 
 /*
