@@ -3,9 +3,29 @@
     "family": "cierres",
     "compas": "4_4",
     "marks": {
-        "1":"agudo",
-        "2":"agudo",
-        "3":"agudo",
-        "4":"agudo"
+        "1": [
+            {
+                "type": "C",
+                "accent": "H"
+            }
+        ],
+        "2": [
+            {
+                "type": "C",
+                "accent": "H"
+            }
+        ],
+        "3": [
+            {
+                "type": "C",
+                "accent": "H"
+            }
+        ],
+        "4": [
+            {
+                "type": "C",
+                "accent": "H"
+            }
+        ]
     }
 }
