@@ -6,24 +6,23 @@ APP.JS
 Responsabilidad:
 
 - Leer la URL.
-- Cargar todos los JSON.
-- Construir runtimeConfig.
-- Pedir la secuencia al sequencer.
+- Cargar familias.
+- Cargar configuración general.
+- Cargar el ejercicio solicitado.
+- Cargar los ejercicios que formen parte de
+  un ejercicio compuesto.
+- Cargar los compases.
+- Crear runtimeConfig.
+- Pedir al secuenciador que construya la partitura.
 - Dibujar el estado inicial.
 
 NO reproduce audio.
-
 NO lleva el tiempo.
-
 NO conoce el scheduler.
+NO construye los pasos musicales.
 
-Cuando termina este archivo existe un único
-objeto global:
-
-window.runtimeConfig
-
-A partir de ese momento el resto de módulos
-trabajan únicamente con él.
+El secuenciador recibe todos los datos ya cargados
+y construye sequenceResolved.
 
 ==================================================
 */
@@ -33,6 +32,7 @@ document.addEventListener(
     init
 );
 
+
 /*
 ==================================================
 CONFIGURACIÓN GLOBAL
@@ -40,6 +40,7 @@ CONFIGURACIÓN GLOBAL
 */
 
 window.runtimeConfig = {};
+
 
 /*
 ==================================================
@@ -72,6 +73,7 @@ async function init() {
         const presetName =
             params.get("preset");
 
+
         if (!family) {
 
             logError(
@@ -81,6 +83,7 @@ async function init() {
             return;
 
         }
+
 
         if (!presetName) {
 
@@ -92,8 +95,15 @@ async function init() {
 
         }
 
-        logOk(`Familia: ${family}`);
-        logOk(`Preset: ${presetName}`);
+
+        logOk(
+            `Familia: ${family}`
+        );
+
+        logOk(
+            `Ejercicio: ${presetName}`
+        );
+
 
         /*
         ==========================================
@@ -111,6 +121,7 @@ async function init() {
         const familyConfig =
             familias[family];
 
+
         if (!familyConfig) {
 
             logError(
@@ -121,13 +132,15 @@ async function init() {
 
         }
 
+
         logOk(
             familyConfig.nombre
         );
 
+
         /*
         ==========================================
-        CONFIGURACIÓN
+        CONFIGURACIÓN GENERAL
         ==========================================
         */
 
@@ -142,54 +155,162 @@ async function init() {
             "Configuración cargada"
         );
 
+
         /*
         ==========================================
-        PRESET
+        EJERCICIO PRINCIPAL
+        ==========================================
+
+        Todo es un ejercicio.
+
+        Puede ser:
+
+        - simple: contiene "marks"
+        - compuesto: contiene "sequence"
+
         ==========================================
         */
 
-        logSection("PRESET");
+        logSection("EJERCICIO");
 
         const preset =
-            await loadJson(
-                `${familyConfig.presets}${presetName}.json`
+            await loadExercise(
+                presetName,
+                familyConfig
             );
 
         logOk(
             preset.name
         );
 
+
         /*
         ==========================================
-        COMPÁS
+        COMPASES
         ==========================================
         */
 
-        logSection("COMPÁS");
+        logSection("COMPASES");
 
         const compases =
             await loadJson(
                 "./config/compas.json"
             );
 
-        const compas =
-            compases[
-                preset.compas
-            ];
+        logOk(
+            "Compases cargados"
+        );
 
-        if (!compas) {
 
-            logError(
-                `Compás inexistente: ${preset.compas}`
-            );
+        /*
+        ==========================================
+        CARGAR EJERCICIOS NECESARIOS
+        ==========================================
 
-            return;
+        Guardamos todos los ejercicios que necesita
+        el ejercicio principal en:
+
+            runtimeConfig.exercises
+
+        Así el secuenciador no necesita hacer
+        ninguna petición HTTP.
+
+        ==========================================
+        */
+
+        logSection("EJERCICIOS");
+
+        const exercises = {};
+
+
+        /*
+        ------------------------------------------
+        EJERCICIO SIMPLE
+        ------------------------------------------
+
+        Si no tiene sequence, el propio ejercicio
+        es el que se va a ejecutar.
+
+        ------------------------------------------
+        */
+
+        if (
+            !Array.isArray(
+                preset.sequence
+            )
+        ) {
+
+            exercises[presetName] =
+                preset;
 
         }
 
-        logOk(
-            compas.nombre
-        );
+
+        /*
+        ------------------------------------------
+        EJERCICIO COMPUESTO
+        ------------------------------------------
+
+        Cargamos cada ejercicio mencionado
+        en sequence.
+
+        ------------------------------------------
+        */
+
+        else {
+
+            for (
+                const item
+                of preset.sequence
+            ) {
+
+                const exerciseName =
+                    item.exercise;
+
+
+                if (!exerciseName) {
+
+                    throw new Error(
+                        "La secuencia contiene un elemento sin 'exercise'"
+                    );
+
+                }
+
+
+                /*
+                Evitamos cargar dos veces
+                el mismo ejercicio.
+                */
+
+                if (
+                    exercises[exerciseName]
+                ) {
+
+                    continue;
+
+                }
+
+
+                logInfo(
+                    `Cargando ejercicio: ${exerciseName}`
+                );
+
+
+                exercises[exerciseName] =
+                    await loadExercise(
+                        exerciseName,
+                        familyConfig
+                    );
+
+
+                logOk(
+                    `${exerciseName} cargado`
+                );
+
+            }
+
+        }
+
 
         /*
         ==========================================
@@ -199,33 +320,54 @@ async function init() {
 
         window.runtimeConfig = {
 
+            /*
+            Identificación
+            */
+
             family,
+
+            presetName,
 
             familyConfig,
 
+
+            /*
+            Configuración general
+            */
+
             config,
+
+
+            /*
+            Ejercicio solicitado
+            */
 
             preset,
 
-            compas
+
+            /*
+            Ejercicios utilizados por la secuencia
+            */
+
+            exercises,
+
+
+            /*
+            Todos los compases disponibles
+            */
+
+            compases
 
         };
 
-            /*
+
+        /*
         ==========================================
-        GENERAR SECUENCIA
+        CONSTRUIR PARTITURA
         ==========================================
 
-        A partir del runtime, el secuenciador
-        construye la representación completa del
-        compás.
-
-        Cada paso contendrá:
-
-        - número de step
-        - etiqueta visual
-        - métrica (K/L)
-        - eventos musicales
+        El secuenciador transforma el ejercicio
+        completo en una lista plana de pasos.
 
         ==========================================
         */
@@ -235,27 +377,40 @@ async function init() {
                 window.runtimeConfig
             );
 
+
         /*
         ==========================================
-        DIBUJO INICIAL
+        COMPÁS PARA EL CANVAS ACTUAL
         ==========================================
 
-        El canvas dibuja el compás completo.
+        El canvas actual todavía trabaja con:
 
-        El metrónomo permanece PARADO.
+            runtimeConfig.compas
 
-        El scheduler todavía NO se inicia.
+        Como todavía no hemos adaptado el canvas
+        a ejercicios compuestos, le proporcionamos
+        provisionalmente el compás del primer
+        ejercicio de la secuencia.
 
-        Será controls.js quien llame a:
-
-            startScheduler()
-
-        cuando el usuario pulse START.
+        Esto NO afecta a sequenceResolved.
 
         ==========================================
         */
 
+        window.runtimeConfig.compas =
+            getFirstCompas(
+                window.runtimeConfig
+            );
+
+
+        /*
+        ==========================================
+        DIBUJO INICIAL
+        ==========================================
+        */
+
         drawCompas();
+
 
         /*
         ==========================================
@@ -275,7 +430,6 @@ async function init() {
 
         logOk(
             "Fase de carga completada"
-
         );
 
     }
@@ -294,16 +448,230 @@ async function init() {
 
 }
 
+
+/*
+==================================================
+CARGAR EJERCICIO
+==================================================
+
+Todos los ejercicios utilizan exactamente el
+mismo formato JSON.
+
+La única diferencia de ubicación es que algunos
+están directamente en:
+
+    presets/rumba/
+
+y los cierres están en:
+
+    presets/rumba/cierres/
+
+Probamos primero presets y después cierres.
+
+==================================================
+*/
+
+async function loadExercise(
+    exerciseName,
+    familyConfig
+) {
+
+    const paths = [
+
+        `${familyConfig.presets}${exerciseName}.json`
+
+    ];
+
+
+    /*
+    ------------------------------------------
+    Directorio de cierres
+    ------------------------------------------
+    */
+
+    if (familyConfig.cierres) {
+
+        paths.push(
+            `${familyConfig.cierres}${exerciseName}.json`
+        );
+
+    }
+
+
+    /*
+    ------------------------------------------
+    Probar las rutas
+    ------------------------------------------
+    */
+
+    for (
+        const path
+        of paths
+    ) {
+
+        try {
+
+            return await loadJson(
+                path
+            );
+
+        }
+
+        catch (error) {
+
+            /*
+            La ruta no existe.
+
+            Probamos la siguiente.
+
+            No mostramos todavía el error porque
+            puede existir en la siguiente ruta.
+            */
+
+        }
+
+    }
+
+
+    /*
+    Ninguna ruta funcionó.
+    */
+
+    throw new Error(
+        `No se encontró el ejercicio "${exerciseName}"`
+    );
+
+}
+
+
+/*
+==================================================
+OBTENER PRIMER COMPÁS
+==================================================
+
+Esto es solamente una adaptación provisional
+para el canvas actual.
+
+En un ejercicio simple:
+
+    ejercicio.compas
+
+En uno compuesto:
+
+    primer ejercicio de sequence
+        ↓
+    ejercicio.compas
+
+Más adelante el canvas deberá conocer el compás
+correspondiente a cada lap.
+
+==================================================
+*/
+
+function getFirstCompas(
+    runtimeConfig
+) {
+
+    const preset =
+        runtimeConfig.preset;
+
+
+    let exerciseName;
+
+
+    /*
+    ------------------------------------------
+    Ejercicio simple
+    ------------------------------------------
+    */
+
+    if (
+        !Array.isArray(
+            preset.sequence
+        )
+    ) {
+
+        exerciseName =
+            runtimeConfig.presetName;
+
+    }
+
+
+    /*
+    ------------------------------------------
+    Ejercicio compuesto
+    ------------------------------------------
+    */
+
+    else {
+
+        if (
+            preset.sequence.length === 0
+        ) {
+
+            throw new Error(
+                "El ejercicio no contiene ninguna vuelta"
+            );
+
+        }
+
+
+        exerciseName =
+            preset.sequence[0].exercise;
+
+    }
+
+
+    /*
+    ------------------------------------------
+    Obtener ejercicio
+    ------------------------------------------
+    */
+
+    const exercise =
+        runtimeConfig.exercises[
+            exerciseName
+        ];
+
+
+    if (!exercise) {
+
+        throw new Error(
+            `No está cargado el ejercicio ${exerciseName}`
+        );
+
+    }
+
+
+    /*
+    ------------------------------------------
+    Obtener compás
+    ------------------------------------------
+    */
+
+    const compas =
+        runtimeConfig.compases[
+            exercise.compas
+        ];
+
+
+    if (!compas) {
+
+        throw new Error(
+            `No existe el compás ${exercise.compas}`
+        );
+
+    }
+
+
+    return compas;
+
+}
+
+
 /*
 ==================================================
 CARGADOR GENÉRICO DE JSON
-==================================================
-
-Todos los módulos utilizan esta función para
-leer archivos JSON.
-
-Devuelve un objeto JavaScript.
-
 ==================================================
 */
 
@@ -312,6 +680,7 @@ async function loadJson(path) {
     const response =
         await fetch(path);
 
+
     if (!response.ok) {
 
         throw new Error(
@@ -319,6 +688,7 @@ async function loadJson(path) {
         );
 
     }
+
 
     return await response.json();
 
