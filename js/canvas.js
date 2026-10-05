@@ -119,6 +119,117 @@ function getStepAngle(
     );
 
 }
+/*
+==================================================
+DATOS DE LA VUELTA ACTUAL
+==================================================
+
+sequenceResolved contiene TODAS las vueltas.
+
+El Canvas, en cambio, representa solamente
+una vuelta cada vez.
+
+Por eso filtramos la partitura utilizando
+currentLap.
+
+==================================================
+*/
+
+function getCurrentLapSteps() {
+
+    if (
+        !window.runtimeConfig ||
+        !window.runtimeConfig.sequenceResolved
+    ) {
+
+        return [];
+
+    }
+
+    return window.runtimeConfig
+        .sequenceResolved
+        .filter(
+            step => step.lap === currentLap
+        );
+
+}
+
+
+/*
+==================================================
+COMPÁS DE LA VUELTA ACTUAL
+==================================================
+
+Cada ejercicio puede tener su propio compás.
+
+Buscamos el ejercicio correspondiente al primer
+paso de la vuelta actual y obtenemos su compás.
+
+==================================================
+*/
+
+function getCurrentLapCompas() {
+
+    const lapSteps =
+        getCurrentLapSteps();
+
+    if (
+        lapSteps.length === 0
+    ) {
+
+        return null;
+
+    }
+
+    const exerciseName =
+        lapSteps[0].exercise;
+
+    const exercise =
+        window.runtimeConfig.exercises[
+            exerciseName
+        ];
+
+    if (!exercise) {
+
+        return null;
+
+    }
+
+    return window.runtimeConfig.compases[
+        exercise.compas
+    ];
+
+}
+
+
+/*
+==================================================
+NÚMERO TOTAL DE VUELTAS
+==================================================
+*/
+
+function getTotalLaps() {
+
+    if (
+        !window.runtimeConfig ||
+        !window.runtimeConfig.sequenceResolved
+    ) {
+
+        return 1;
+
+    }
+
+    return Math.max(
+        ...window.runtimeConfig
+            .sequenceResolved
+            .map(
+                step => step.lap
+            )
+    );
+
+}
+
+
 
 /*
 ==================================================
@@ -196,26 +307,31 @@ function drawOuterCircle() {
 ==================================================
 MUESCAS
 
-Una por subdivisión.
+Una por subdivisión de LA VUELTA ACTUAL.
 
 ==================================================
 */
 
 function drawTicks() {
 
+    const lapSteps =
+        getCurrentLapSteps();
+
     const totalSteps =
-        window.runtimeConfig
-            .sequenceResolved
-            .length;
+        lapSteps.length;
+
+    if (
+        totalSteps === 0
+    ) {
+
+        return;
+
+    }
 
     for (
-
         let step = 0;
-
         step < totalSteps;
-
         step++
-
     ) {
 
         const angle =
@@ -272,22 +388,37 @@ function drawTicks() {
 ==================================================
 NUMERACIÓN
 
-Se dibujan utilizando las etiquetas del compás.
+Se utilizan las etiquetas del compás de la
+vuelta actual.
 
 ==================================================
 */
 
 function drawLabels() {
 
+    const compas =
+        getCurrentLapCompas();
+
+    if (!compas) {
+
+        return;
+
+    }
+
     const labels =
-        window.runtimeConfig
-            .compas
-            .etiquetas_default;
+        compas.etiquetas_default;
+
+    if (!labels) {
+
+        return;
+
+    }
+
+    const lapSteps =
+        getCurrentLapSteps();
 
     const totalSteps =
-        window.runtimeConfig
-            .sequenceResolved
-            .length;
+        lapSteps.length;
 
     labels.forEach(label => {
 
@@ -333,8 +464,8 @@ function drawLabels() {
 ==================================================
 EVENTOS
 
-Cada subdivisión puede contener
-0, 1 o varios eventos.
+Dibuja únicamente los eventos pertenecientes
+a la vuelta actual.
 
 ==================================================
 */
@@ -342,11 +473,18 @@ Cada subdivisión puede contener
 function drawEvents() {
 
     const sequence =
-        window.runtimeConfig
-            .sequenceResolved;
+        getCurrentLapSteps();
 
     const totalSteps =
         sequence.length;
+
+    if (
+        totalSteps === 0
+    ) {
+
+        return;
+
+    }
 
     sequence.forEach(
 
@@ -368,6 +506,13 @@ function drawEvents() {
                 Math.sin(angle) *
                 STEP_RADIUS;
 
+
+            /*
+            --------------------------------------
+            PASO SIN EVENTOS
+            --------------------------------------
+            */
+
             if (
                 step.events.length === 0
             ) {
@@ -382,21 +527,40 @@ function drawEvents() {
 
             }
 
+
+            /*
+            --------------------------------------
+            EVENTOS
+            --------------------------------------
+
+            Un mismo step puede contener varios
+            eventos.
+
+            --------------------------------------
+            */
+
             step.events.forEach(
 
                 (event, eventIndex) => {
 
                     const offset =
                         step.events.length === 1
-                        ? { x:0, y:0 }
+                        ? {
+                            x: 0,
+                            y: 0
+                        }
                         : {
 
                             x:
-                                (eventIndex - (step.events.length-1)/2) * 12,
+                                (
+                                    eventIndex -
+                                    (step.events.length - 1) / 2
+                                ) * 12,
 
-                            y:0
+                            y: 0
 
                         };
+
 
                     drawEvent(
 
@@ -419,6 +583,7 @@ function drawEvents() {
     );
 
 }
+
 
 /*
 ==================================================
@@ -732,21 +897,35 @@ function drawLapCounter() {
 /*
 ==================================================
 AGUJA
+
+currentStep es el step LOCAL de la vuelta.
+
 ==================================================
 */
 
 function drawNeedle() {
 
-    if(currentStep < 0){
+    if (
+        currentStep < 0
+    ) {
 
         return;
 
     }
 
+    const lapSteps =
+        getCurrentLapSteps();
+
     const totalSteps =
-        window.runtimeConfig
-            .sequenceResolved
-            .length;
+        lapSteps.length;
+
+    if (
+        totalSteps === 0
+    ) {
+
+        return;
+
+    }
 
     const angle =
         getStepAngle(
@@ -764,22 +943,17 @@ function drawNeedle() {
         Math.sin(angle) *
         (STEP_RADIUS - 25);
 
+
     ctx.beginPath();
 
     ctx.moveTo(
-
         cx,
-
         cy
-
     );
 
     ctx.lineTo(
-
         x,
-
         y
-
     );
 
     ctx.strokeStyle =
@@ -944,9 +1118,9 @@ function handleCanvasEvent(event) {
                 event.step
             );
 
-            setLap(
-                event.lap,
-                1
+           setLap(
+            event.lap,
+            getTotalLaps()
             );
 
         },
